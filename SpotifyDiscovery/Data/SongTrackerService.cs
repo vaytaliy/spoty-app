@@ -65,8 +65,9 @@ namespace SpotifyDiscovery.Data
         }
 
         //TODO: Add ability to sync playlists
-        public int SynchronizePlaylist(Dictionary<string, List<string>> playlistWithSongs)
+        public int SaveToPlaylist(string songId, string ownerId)
         {
+            //
             return -1;
         }
 

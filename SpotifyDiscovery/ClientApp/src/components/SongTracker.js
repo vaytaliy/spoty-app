@@ -97,15 +97,16 @@ const SongTracker = (props) => {
             timeout = setTimeout(async () => await processSongRegistration(requestData), 2000) // to give some delay on song processing and unload server
         }
     }
-    useEffect(() => {
+    
+    // useEffect(() => {
         
-        console.log("getting new tokens")
-        //testing new tokens
-        setTimeout(async() => {
-            await props.data.setRefreshedTokens()
-        }, 20 * 1000)
+    //     console.log("getting new tokens")
+    //     //testing new tokens
+    //     setTimeout(async() => {
+    //         await props.data.setRefreshedTokens()
+    //     }, 20 * 1000)
 
-    }, [])
+    // }, [])
     
 
     return (

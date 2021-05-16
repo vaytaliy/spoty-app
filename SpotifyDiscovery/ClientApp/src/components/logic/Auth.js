@@ -34,6 +34,8 @@ const AuthLogic = {
         if (res.status == 200) {  //TODO: perhaps its best to create separate method to do status processing
 
             const parsedRes = await res.json();
+
+            console.log(parsedRes);
             const tokenSaveResult = saveTokens(parsedRes.access_token, parsedRes.refresh_token)
 
             return {successResult: tokenSaveResult};

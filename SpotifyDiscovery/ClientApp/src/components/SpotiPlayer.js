@@ -151,6 +151,7 @@ const SpotiPlayer = (props) => {
 
         player.addListener('ready', async ({ device_id }) => {
             setLoadMessage(null)
+            await WebPlayer.setLatestPlayingTrack()
             setPlayer(player)
             console.log('Ready with Device ID', device_id);
             await props.data.modifyLoginState(true); // TODO:cross check this

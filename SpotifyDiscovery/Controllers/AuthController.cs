@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SpotifyDiscovery.Data;
 using SpotifyDiscovery.Objects;
 using SpotifyDiscovery.Utilities;
 using System.Collections.Generic;
@@ -22,10 +23,15 @@ namespace SpotifyDiscovery.Controllers
         private readonly IConfiguration _configuration;
         private readonly HttpClient _client;
         private readonly ILogger<AuthController> _logger;
+        private readonly AccountService _accountService;
 
-        public AuthController(IConfiguration configuration, HttpClient client, ILogger<AuthController> logger)
+        public AuthController(IConfiguration configuration, 
+            HttpClient client, 
+            ILogger<AuthController> logger,
+            AccountService accountService)
         {
             _configuration = configuration;
+            _accountService = accountService;
             _client = client;
             _logger = logger;
             var bytes = Encoding.UTF8.GetBytes(_configuration["ClientId"] + ":" + _configuration["ClientSecret"]);
@@ -77,7 +83,15 @@ namespace SpotifyDiscovery.Controllers
 
                 TokenObject tokenObject = (TokenObject)JsonSerializer.Deserialize(responseContent, typeof(TokenObject));
 
-                Response.Redirect(Helper.BaseURL + "/callback" + $"?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
+                var playlistId = await _accountService.HandleUserAccount(tokenObject.AccessToken);
+
+                if (playlistId == null)
+                {
+                    //TODO test if thats possible
+                    Response.Redirect(Helper.BaseURL + "/callback" + $"?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
+                }
+
+                Response.Redirect(Helper.BaseURL + "/callback" + $"?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}&playlist={playlistId}");
                 return;
             }
 

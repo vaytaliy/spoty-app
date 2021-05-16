@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using SpotifyDiscovery.Objects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +19,10 @@ namespace SpotifyDiscovery.Models
         public string Nickname { get; set; }
         [BsonElement("friendList")]
         public BsonArray Friends { get; set; }
-        [BsonElement("profilePictureURL")]
-        [BsonDefaultValue("place default image url here")] //TODO: filesystem
-        public string ProfilePictureURL { get; set; }
-        [BsonElement("freshPlaylists")]
-        public string FreshPlaylistsIdentifiers { get; set; }
+        [BsonElement("ProfileImages")]
+        public List<ImageObject> ProfileImages { get; set; }
+        [BsonElement("freshPlaylistId")]
+        public string FreshPlaylistId { get; set; }
         [BsonElement("rooms")]
         public BsonArray Rooms { get; set; } //BSON array which keeps list of ObjectIds
     }

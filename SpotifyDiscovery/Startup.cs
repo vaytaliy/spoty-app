@@ -36,6 +36,8 @@ namespace SpotifyDiscovery
 
             services.AddScoped<HttpClient>();
             services.AddScoped<SongTrackerService>();
+            services.AddScoped<AccountService>();
+            services.AddScoped<PlaylistService>();
 
             services.AddControllersWithViews();
             services.AddLogging();
