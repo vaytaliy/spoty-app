@@ -49,11 +49,20 @@ const SongTracker = (props) => {
         setAutoskipIsEnabled(!currentState);
     }
 
+    const saveSongToPlaylist = async (songId) => {
+
+        let accessToken = window.localStorage.getItem("access_token");
+        let playlistId = window.localStorage.getItem("playlist");
+
+        await Tracker.saveSongToPlaylistRequest(songId, accessToken, playlistId);
+    }
+
     //requestData contains such:
     // accessToken
     // accountId (nullable)
     // songId
     const processSongRegistration = async (requestData) => {
+        
         let res = await Tracker.handleSongRegistrationRequest(requestData)
 
         if (res == "failure" && retryAttempts < 5) {
@@ -122,7 +131,7 @@ const SongTracker = (props) => {
                     onChange={handleAutoskipChange}
                 />
             </label>
-            <SpotiPlayer data={props.data} tracking={{ registerSong, skipSong, autoskipIsEnabled }} />
+            <SpotiPlayer data={props.data} tracking={{ registerSong, skipSong, autoskipIsEnabled, saveSongToPlaylist }} />
         </div>
     );
 }

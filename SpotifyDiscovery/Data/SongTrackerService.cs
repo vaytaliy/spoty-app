@@ -1,7 +1,12 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Driver;
+using SpotifyDiscovery.Dtos;
 using SpotifyDiscovery.Models;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Data
@@ -9,10 +14,11 @@ namespace SpotifyDiscovery.Data
     public class SongTrackerService
     {
         private readonly Db _db;
-
-        public SongTrackerService(Db db)
+        private readonly HttpClient _client;
+        public SongTrackerService(Db db, HttpClient client)
         {
             _db = db;
+            _client = client;
         }
 
         /// <summary> 
@@ -62,13 +68,6 @@ namespace SpotifyDiscovery.Data
 
             var music = await _db.PlayedMusic.FindOneAndUpdateAsync<PlayedMusic>(filter, update);
             return "new_song";
-        }
-
-        //TODO: Add ability to sync playlists
-        public int SaveToPlaylist(string songId, string ownerId)
-        {
-            //
-            return -1;
         }
 
         private static PlayedMusic CreateTrackedAccount(string accountId)

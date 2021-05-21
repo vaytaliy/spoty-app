@@ -43,7 +43,7 @@ namespace SpotifyDiscovery.Controllers
         [HttpGet("login")]
         public void RedirectToLogin()
         {
-            var scopes = "user-read-email user-read-private streaming user-modify-playback-state user-read-currently-playing user-read-playback-position playlist-read-private";
+            var scopes = "user-read-email user-read-private streaming user-modify-playback-state user-read-currently-playing user-read-playback-position playlist-read-private playlist-modify-public playlist-modify-private";
 
             Response.Redirect($"https://accounts.spotify.com/authorize?response_type={"code"}&" +
                 $"client_id={_configuration["ClientId"]}" +
@@ -83,7 +83,7 @@ namespace SpotifyDiscovery.Controllers
 
                 TokenObject tokenObject = (TokenObject)JsonSerializer.Deserialize(responseContent, typeof(TokenObject));
 
-                var playlistId = await _accountService.HandleUserAccount(tokenObject.AccessToken);
+                var playlistId = await _accountService.FindUserGetDatabasePlaylist(tokenObject.AccessToken);
 
                 if (playlistId == null)
                 {

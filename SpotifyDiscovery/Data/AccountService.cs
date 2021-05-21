@@ -25,10 +25,30 @@ namespace SpotifyDiscovery.Data
             _playlistService = playlistService;
         }
 
-        public async Task<string> HandleUserAccount(string accessToken)
+        public async Task<string> FindUserGetDatabasePlaylist(string accessToken)
         {
             _accessToken = accessToken;
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            var foundAccount = await GetProfileFromTokenSpotify(accessToken);
+            
+            if (foundAccount == null)
+            {
+                return "couldn't find account";
+            }
+            var res = await HandleProfileCreationIfNotExists(foundAccount);
+
+            if (res.Status == "Error")
+            {
+                //TODO better handling
+                return res.Payload;
+            }
+
+            return res.Payload;
+        }
+
+        public async Task<ProfileReadDto> GetProfileFromTokenSpotify(string accessToken)
+        {
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             using var response = await _client.GetAsync("https://api.spotify.com/v1/me");
 
@@ -38,15 +58,8 @@ namespace SpotifyDiscovery.Data
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 ProfileReadDto userProfile = (ProfileReadDto)JsonSerializer.Deserialize(responseContent, typeof(ProfileReadDto));
-                var res = await HandleProfileCreationIfNotExists(userProfile);
-
-                if (res.Status == "Error")
-                {
-                    //TODO better handling
-                    return res.Payload;
-                }
-
-                return res.Payload;
+                
+                return userProfile;
             }
 
             return null; //Handle errors here
@@ -66,21 +79,24 @@ namespace SpotifyDiscovery.Data
                 {
                     return (Status: "Error", Payload: "couldn't create account"); //TODO: better error handling
                 }
+
+                var playlistId = await _playlistService.CreatePlaylist(_accessToken, userProfile.SpotifyId);
+
+                if (playlistId == null)
+                {
+                    return (Status: "Error", Payload: "couldn't create playlist");
+                }
+
+                await AssociatePlaylistWithAccount(userProfile.SpotifyId, playlistId);
+                return (Status: "Success", Payload: playlistId);
             }
 
-            var playlistId = await _playlistService.CreatePlaylist(_accessToken, userProfile.SpotifyId);
+            
 
-            if (playlistId == null)
-            {
-                return (Status: "Error", Payload: "couldn't create playlist");
-            }
-
-            await AssociatePlaylistWithAccount(userProfile.SpotifyId, playlistId);
-
-            return (Status: "Success", Payload: playlistId);
+            return (Status: "Success", Payload: account.FreshPlaylistId);
         }
 
-        private async Task AssociatePlaylistWithAccount(string spotifyId, string playlistId)
+        public async Task AssociatePlaylistWithAccount(string spotifyId, string playlistId)
         {
             var filter = new BsonDocument("spotifyId", spotifyId);
             var update = Builders<Account>.Update.Set("freshPlaylistId", playlistId);

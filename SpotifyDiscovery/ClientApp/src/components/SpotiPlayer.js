@@ -151,7 +151,7 @@ const SpotiPlayer = (props) => {
 
         player.addListener('ready', async ({ device_id }) => {
             setLoadMessage(null)
-            await WebPlayer.setLatestPlayingTrack()
+            //await WebPlayer.setLatestPlayingTrack()
             setPlayer(player)
             console.log('Ready with Device ID', device_id);
             await props.data.modifyLoginState(true); // TODO:cross check this
@@ -175,6 +175,7 @@ const SpotiPlayer = (props) => {
                 <button onClick={togglePlayback}>{trackIsPlaying ? "pause" : "play"}</button>
                 <button onClick={handlePlayPreviousTrack}>Previous</button>
                 <button onClick={handlePlayNextTrack}>Next</button>
+                <button onClick={() => props.tracking.saveSongToPlaylist(songId)}>Save it</button>
             </div>
         </div>
     );

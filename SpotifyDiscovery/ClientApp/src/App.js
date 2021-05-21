@@ -14,6 +14,7 @@ import AuthLogic from './components/logic/Auth';
 const App = () => {
 
 	const [isLoggedIn, setIsLoggedIn] = useState(true);
+	const [loginAttemptSuccess, loginAttemptFail] = useState(false);
 
 	let success = false;
 	const accessToken = window.localStorage.getItem('access_token');
@@ -38,6 +39,7 @@ const App = () => {
 
 			console.log("couldn't renew credentials")
 			setIsLoggedIn(false);
+			loginAttemptFail(true);
 		}
 	}
 
@@ -58,7 +60,7 @@ const App = () => {
 	return (
 		<div>
 			<Route path='/home'>
-				{isLoggedIn ? <Home data={{ modifyLoginState, setRefreshedTokens }} /> : <Redirect to='/unauthorized' />}
+				{loginAttemptFail ? <Home data={{ modifyLoginState, setRefreshedTokens }} /> : <Redirect to='/unauthorized' />}
 			</Route>
 			<Route path='/unauthorized'>
 				<Login />

@@ -32,34 +32,34 @@ const WebPlayer = {
         return actualSongId;
     },
 
-    setLatestPlayingTrack: async () => {
+    // setLatestPlayingTrack: async () => {
         
-        const token = window.localStorage.getItem("access_token");
+    //     const token = window.localStorage.getItem("access_token");
 
-        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing?market=from_token', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-        });
+    //     const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing?market=from_token', {
+    //         method: 'GET',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             'Authorization': `Bearer ${token}`,
+    //         },
+    //     });
 
-        const parsedRes = await res.json();
-        console.log(parsedRes)
+    //     const parsedRes = await res.json();
+    //     console.log(parsedRes)
 
-        if (res.status == 200) {
+    //     if (res.status == 200) {
             
            
-            console.log("===")
-            console.log(parsedRes);
+    //         console.log("===")
+    //         console.log(parsedRes);
             
-            return {result: "success", payload: parsedRes};
-        }
+    //         return {result: "success", payload: parsedRes};
+    //     }
 
-        if (res.status == 204) {
+    //     if (res.status == 204) {
             
-            return {result: "no_track_playing"};
-        }        
-    }
+    //         return {result: "no_track_playing"};
+    //     }        
+    // }
 }
 export default WebPlayer;
