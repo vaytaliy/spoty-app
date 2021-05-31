@@ -6,7 +6,6 @@ const Home = (props) => {
     
     return (
         <div>
-            {console.log(props)}
             <SongTracker data={props.data} />
         </div>
     );

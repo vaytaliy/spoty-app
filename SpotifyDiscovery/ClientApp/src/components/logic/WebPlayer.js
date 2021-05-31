@@ -19,47 +19,48 @@ const WebPlayer = {
             return null;
         }
 
-        const actualSongId = {
+        const currentSong = {
             id: state.track_window.current_track.id,
             name: state.track_window.current_track.name,
             imageURL: state.track_window.current_track.album.images[1].url //64 by 64 image
         };
         
-        if (actualSongId.id == storedSongId) {
+        if (currentSong.id == storedSongId) {
             return null;
         }
 
-        return actualSongId;
+        return currentSong;
     },
 
-    // setLatestPlayingTrack: async () => {
+    transferUserPlaybackHere: async (deviceId, accessToken, isContinuePlaying = false) => {
+        //PUT https://api.spotify.com/v1/me/player/play
+        console.log('token', accessToken);
         
-    //     const token = window.localStorage.getItem("access_token");
+        const res = await fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+                device_ids: [deviceId],
+                play: isContinuePlaying
+            })
+        });
 
-    //     const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing?market=from_token', {
-    //         method: 'GET',
-    //         headers: {
-    //             'Content-Type': 'application/json',
-    //             'Authorization': `Bearer ${token}`,
-    //         },
-    //     });
+        if (res.status == 204) {
+            return { result: "success" };
+        }
 
-    //     const parsedRes = await res.json();
-    //     console.log(parsedRes)
+        if (res.status == 403) {
+            return {result: "not_premium"};
+        }
 
-    //     if (res.status == 200) {
-            
-           
-    //         console.log("===")
-    //         console.log(parsedRes);
-            
-    //         return {result: "success", payload: parsedRes};
-    //     }
+        if (res.status == 404) {
+            return {result: "device_not_found"};
+        }
 
-    //     if (res.status == 204) {
-            
-    //         return {result: "no_track_playing"};
-    //     }        
-    // }
+        return {result: "unexpected_response_code"};
+    }
 }
 export default WebPlayer;

@@ -14,8 +14,9 @@ const CallbackComponent = (props) => {
         
     let accessToken = urlParams.get('access_token');
     let refreshToken = urlParams.get('refresh_token');
+    let playlistId = urlParams.get('playlist');
 
-    isSuccessful = AuthLogic.saveCreds(accessToken, refreshToken)
+    isSuccessful = AuthLogic.saveCreds(accessToken, refreshToken, playlistId)
 
     if (isSuccessful){
 

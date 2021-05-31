@@ -18,21 +18,18 @@ namespace SpotifyDiscovery.Controllers
     {
         private readonly SongTrackerService _songTrackerService;
         private readonly AccountService _accountService;
-        private readonly PlaylistService _playlistService;
         private readonly ILogger<SongTrackerController> _logger;
         private readonly IMapper _mapper;
         public SongTrackerController(
             SongTrackerService songTrackerService,
             ILogger<SongTrackerController> logger,
             AccountService accountService,
-            IMapper mapper,
-            PlaylistService playlistService)
+            IMapper mapper)
         {
             _songTrackerService = songTrackerService;
             _logger = logger;
             _mapper = mapper;
             _accountService = accountService;
-            _playlistService = playlistService;
         }
 
         [HttpPost("register")]
@@ -56,7 +53,7 @@ namespace SpotifyDiscovery.Controllers
             var playlistId = await _accountService.FindUserGetDatabasePlaylist(addSongToPlaylistDto.AccessToken);
             addSongToPlaylistDto.PlaylistId = playlistId;
 
-            var isSuccessful = await _playlistService.SaveToPlaylist(addSongToPlaylistDto);
+            var isSuccessful = await _accountService.SaveToPlaylist(addSongToPlaylistDto);
             
             if (isSuccessful)
             {

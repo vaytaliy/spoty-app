@@ -12,8 +12,38 @@ const SongTracker = (props) => {
     const [requestTimeoutIsCreated, setRequestTimeoutIsCreated] = useState(false);
     const [skipSong, setSkipSong] = useState(false);
     const [retryAttempts, setRetryAttempts] = useState(0);
+    const [playlistId, setPlaylistId] = useState('');
+    const [songId, setSongId] = useState(null);
 
     let timeout = null;
+
+    useEffect(() => {
+        const playlistId = window.localStorage.getItem('playlist_id');
+        console.log(playlistId);
+        if (playlistId) {
+
+            setPlaylistId(`https://open.spotify.com/playlist/${playlistId}`);
+        }
+    }, [])
+
+    useEffect(() => {
+        //console.log('songid worked lol')
+        //console.log(songId);
+    }, [songId])
+
+    const setCurrentSongId = async (playbackData) => {
+
+        const currentSong = songId;
+        //console.log(playbackData.songId);
+        //setSongId(playbackData.songId);
+        //console.log(songId);
+        //console.log(playbackData.songId);
+
+        if (currentSong != songId){
+           
+            await registerSong(playbackData);
+        } 
+    }
 
     const renderSuccessResultMessage = (resultMessage) => {
 
@@ -49,12 +79,15 @@ const SongTracker = (props) => {
         setAutoskipIsEnabled(!currentState);
     }
 
-    const saveSongToPlaylist = async (songId) => {
+    const saveSongToPlaylist = async () => {
 
         let accessToken = window.localStorage.getItem("access_token");
         let playlistId = window.localStorage.getItem("playlist");
+        console.log(songId)
 
-        await Tracker.saveSongToPlaylistRequest(songId, accessToken, playlistId);
+        if (songId) {
+            await Tracker.saveSongToPlaylistRequest(songId, accessToken, playlistId);
+        }
     }
 
     //requestData contains such:
@@ -62,24 +95,16 @@ const SongTracker = (props) => {
     // accountId (nullable)
     // songId
     const processSongRegistration = async (requestData) => {
-        
+
         let res = await Tracker.handleSongRegistrationRequest(requestData)
 
         if (res == "failure" && retryAttempts < 5) {
             setRetryAttempts(retryAttempts += 1);
-            registerSong();
+            //registerSong();
         } else if (res == "failure" && retryAttempts >= 5) {
             res.result = "retry_error";
         }
-        // } else if (res == "failure" && requestRetries >= 5) {
-        //     processingStatus = "retry_error";
-        // } else if (res == "in_memory") {
-        //     processingStatus = "in_memory"
-        // } else if (res && res.result) {  // has result
-        //     processingStatus = res.result;
-        // }
 
-        // TODO insert auto playlist logic
         renderSuccessResultMessage(res.result);
         setSkipSong(false);
         setRequestTimeoutIsCreated(false);
@@ -88,7 +113,7 @@ const SongTracker = (props) => {
     const registerSong = async (requestData, autoPlaylistURL = null) => {
 
         setRegisterMessage({ status: "wait", message: "Checking the song in the system.." });
-
+        console.log('registering song')
         let requestedUser = await Auth.requestAccountId(requestData.accessToken) //
 
         if (requestedUser.errorMessage) {
@@ -106,17 +131,6 @@ const SongTracker = (props) => {
             timeout = setTimeout(async () => await processSongRegistration(requestData), 2000) // to give some delay on song processing and unload server
         }
     }
-    
-    // useEffect(() => {
-        
-    //     console.log("getting new tokens")
-    //     //testing new tokens
-    //     setTimeout(async() => {
-    //         await props.data.setRefreshedTokens()
-    //     }, 20 * 1000)
-
-    // }, [])
-    
 
     return (
         <div>
@@ -131,7 +145,9 @@ const SongTracker = (props) => {
                     onChange={handleAutoskipChange}
                 />
             </label>
-            <SpotiPlayer data={props.data} tracking={{ registerSong, skipSong, autoskipIsEnabled, saveSongToPlaylist }} />
+            <a href={playlistId}>See playlist</a>
+            <button onClick={saveSongToPlaylist}>Save to playlist</button>
+            <SpotiPlayer data={props.data} tracking={{ registerSong, skipSong, autoskipIsEnabled, saveSongToPlaylist, setCurrentSongId, songId, setSongId }} />
         </div>
     );
 }

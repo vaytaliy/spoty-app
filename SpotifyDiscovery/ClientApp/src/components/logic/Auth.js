@@ -1,11 +1,11 @@
 
 const saveTokens = (accessToken, refreshToken) => {
     if (refreshToken) {
-        window.localStorage.setItem("refresh_token", refreshToken);
+        window.localStorage.setItem('refresh_token', refreshToken);
     }
 
     if (accessToken) {
-        window.localStorage.setItem("access_token", accessToken);
+        window.localStorage.setItem('access_token', accessToken);
         return true; //access token or refresh token is success -> if no access token then fail
     }
     return false;
@@ -14,10 +14,10 @@ const saveTokens = (accessToken, refreshToken) => {
 const AuthLogic = {
     tryRefreshTokens: async () => {
 
-        const refresh_token = window.localStorage.getItem("refresh_token");
+        const refresh_token = window.localStorage.getItem('refresh_token');
 
         if (!refresh_token) {
-            console.log("missing refresh token, log in again");
+            console.log('missing refresh token, log in again');
             return;
         }
 
@@ -31,39 +31,43 @@ const AuthLogic = {
             })
         });
 
-        if (res.status == 200) {  //TODO: perhaps its best to create separate method to do status processing
+        if (res.status == 200) {
 
             const parsedRes = await res.json();
 
-            console.log(parsedRes);
             const tokenSaveResult = saveTokens(parsedRes.access_token, parsedRes.refresh_token)
 
-            return {successResult: tokenSaveResult};
+            return {successResult: tokenSaveResult, 
+                credentials: {
+                    accessToken: window.localStorage.getItem('access_token'),
+                    refreshToken: window.localStorage.getItem('refresh_token')
+                }};
         }
 
-        //handle unauthorized condition, cause some other status  code might be returned, or an error
-
-        return {error: "unauthorized"}
-
+        return {error: 'unauthorized'}
         //refresh token might not come with request
         //has access_token, also it may contain refresh_token
     },
 
     // runs from ./callback?token=..
-    saveCreds: (accessToken, refreshToken) => {
+    saveCreds: (accessToken, refreshToken, playlistId) => {
+        console.log(playlistId)
+        if (playlistId){
+            window.localStorage.setItem('playlist_id', playlistId);
+        }
 
         if (!accessToken) {
-            console.log('return error authenticating, redirect user to auth again')
+            console.log('return error authenticating, redirect user to auth again');
             return false; //not success redirect
         }
 
-        window.localStorage.setItem("access_token", accessToken);
+        window.localStorage.setItem('access_token', accessToken);
 
         if (refreshToken) {
-            window.localStorage.setItem("refresh_token", refreshToken)
+            window.localStorage.setItem('refresh_token', refreshToken);
         }
 
-        return true; //ready for success redirect
+        return true;
     },
 
     requestAccountId: async (accessToken) => {
@@ -79,10 +83,10 @@ const AuthLogic = {
         if (res.status == 200){
             
             const parsedRes = await res.json();
-            return parsedRes 
+            return parsedRes;
         }
 
-        return {errorMessage: "err getting user id"}
+        return {errorMessage: 'err getting user id'}
     }
 }
 

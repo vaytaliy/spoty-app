@@ -1,68 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { Redirect } from 'react-router';
 import WebPlayer from './logic/WebPlayer';
+
+let spotyPlayer = null;
 
 const SpotiPlayer = (props) => {
 
     const [loadMessage, setLoadMessage] = useState(null);
-    //const [autoSkip, setAutoskip] = useState({ skipSeconds: 1000, isEnabled: false })
-    const [currentSong, setCurrentSong] = useState(null);
     const [songId, setSongId] = useState(null);
-    const [player, setPlayer] = useState(null); // initialized on spotify SDK
     const [timerIsCreated, setTimerIsCreated] = useState(false);
     const [trackIsPlaying, setTrackIsPlaying] = useState(false);
+    const [playerState, setPlayerState] = useState(null);
+    const [currentSong, setCurrentSong] = useState(null);
+    //const [currentSongId, setCurrentSongId] = useState(null);
 
     let currentSongId = null;
     let timeout = null;
 
     useEffect(() => {
+        //initially this was used
+        //for every new passed credentials
         const spotyPlayerScript = document.createElement('script');
         spotyPlayerScript.src = "https://sdk.scdn.co/spotify-player.js";
         spotyPlayerScript.async = true;
         document.body.appendChild(spotyPlayerScript);
-        return () => {
+        console.log(window.localStorage.getItem('access_token'));
+        startSpotifySDK();
+        return () => { // cleans up on rerender
             document.body.removeChild(spotyPlayerScript);
+            console.log('cleanup');
+            const childEls = document.body.children;
+
+            let iframes = [];
+
+            for (let i = 0; i < childEls.length; i++) {
+                if (childEls[i].tagName === 'IFRAME') {
+                    iframes.push(childEls[i]);
+                }
+            }
+
+            for (let i = 0; i < iframes.length; i++) {
+                iframes[i].remove();
+            }
+
+            if (spotyPlayer) {
+                spotyPlayer.removeListener('player_state_changed')
+                spotyPlayer.removeListener('initialization_error')
+                spotyPlayer.removeListener('account_error')
+                spotyPlayer.removeListener('playback_error')
+                spotyPlayer.removeListener('authentication_error')
+                spotyPlayer.removeListener('player_state_changed')
+                spotyPlayer.removeListener('ready')
+                spotyPlayer.removeListener('not_ready')
+                spotyPlayer.disconnect();
+            }
         }
-    }, [])
-    //props.modifyLoginState
-    // useEffect(() => {
-
-    //     console.log("skip?", props.tracking.skipSong, props.tracking.autoskipIsEnabled)
-    //     const skipTrack = async () => {
-    //         console.log(player);
-
-    //         
-    //     }
-    //     skipTrack();
-    // }, [songId])
+    }, [props.data.credentials])
 
     useEffect(() => {
 
         clearTimeout(timeout)
 
-        if (player && props.tracking && props.tracking.skipSong && props.tracking.autoskipIsEnabled && !timerIsCreated) {
+        if (spotyPlayer && props.tracking && props.tracking.skipSong && props.tracking.autoskipIsEnabled && !timerIsCreated) {
             setTimerIsCreated(true)
             timeout = setTimeout(handleSkip, 3000);
         }
 
         function handleSkip() {
-            console.log('===')
-
-
-            console.log(props.tracking.skipSong);
-            console.log(props.tracking.autoskipIsEnabled);
-
-            player.nextTrack();
-            console.log("skipped track");
+            spotyPlayer.nextTrack();
             setTimerIsCreated(false)
         }
 
-        console.log('timeout', timeout);
     }, [props.tracking.skipSong])
 
-    const togglePlayback = () => {
 
-        if (player) {
-            player.togglePlay()
+    const togglePlayback = () => {
+        console.log(spotyPlayer)
+        if (spotyPlayer) {
+            spotyPlayer.togglePlay()
                 .then(() => {
                     console.log('toggled playback')
                 })
@@ -71,8 +86,8 @@ const SpotiPlayer = (props) => {
 
     const handlePlayPreviousTrack = () => {
 
-        if (player) {
-            player.previousTrack().then(() => {
+        if (spotyPlayer) {
+            spotyPlayer.previousTrack().then(() => {
                 console.log('Set to previous track!');
             });
         }
@@ -80,8 +95,8 @@ const SpotiPlayer = (props) => {
 
     const handlePlayNextTrack = () => {
 
-        if (player) {
-            player.nextTrack().then(() => {
+        if (spotyPlayer) {
+            spotyPlayer.nextTrack().then(() => {
                 console.log('Set to next track!');
             });
         }
@@ -101,69 +116,74 @@ const SpotiPlayer = (props) => {
         return player;
     }
 
-    window.onSpotifyWebPlaybackSDKReady = async () => {
+    const startSpotifySDK = () => {
 
-        const player = initializePlayer();
+        window.onSpotifyWebPlaybackSDKReady = async () => {
 
-        //playerSetState({player})
-        player.addListener('player_state_changed', state => {
-            if (state) {
-                setTrackIsPlaying(!state.paused);
-            }
-        })
+            spotyPlayer = initializePlayer();
 
-        player.addListener('initialization_error', ({ message }) => { console.error(message); });
+            spotyPlayer.addListener('initialization_error', ({ message }) => { console.error(message); });
 
-        player.addListener('authentication_error', ({ message }) => { console.error(message); });
+            spotyPlayer.addListener('account_error', ({ message }) => { console.error(message); });
 
-        player.addListener('account_error', ({ message }) => { console.error(message); });
+            spotyPlayer.addListener('playback_error', ({ message }) => { console.error(message); });
 
-        player.addListener('playback_error', ({ message }) => { console.error(message); });
+            spotyPlayer.addListener('authentication_error', async state => {
 
-        player.addListener('authentication_error', async state => {
+                console.log('auth error');
+                await props.data.setRefreshedTokens(); // this is good
+                props.data.runRefreshAuthorization();
+            })
 
-            console.log('auth error');
-            await props.data.setRefreshedTokens(); // this is good
+            spotyPlayer.addListener('player_state_changed', async state => {
 
-        })
+                let newSong = WebPlayer.handleStateChange(state, currentSongId);
+                //may return new song object or null if current song isn't new
 
-        player.addListener('player_state_changed', async state => {
+                if (newSong) {
+                    currentSongId = newSong.id
+                    //setSongId(currentSongId);
+                    props.tracking.setSongId(newSong.id);
+                    if (props.tracking) {
 
-            let newSong = WebPlayer.handleStateChange(state, currentSongId);
-            //may return new song object or null if current song isn't new
+                        await props.tracking.registerSong({ songId: newSong.id, accessToken: window.localStorage.getItem("access_token") });
+                    }
 
-            if (newSong) {
-                currentSongId = newSong.id
-                setSongId(currentSongId);
-
-                if (props.tracking) {
-
-                    const accessToken = window.localStorage.getItem("access_token");
-                    console.log(newSong.id)
-
-                    await props.tracking.registerSong({ songId: newSong.id, accessToken });
+                    setCurrentSong(newSong)
                 }
-
-                setCurrentSong(newSong)
-            }
-        });
+            });
 
 
-        player.addListener('ready', async ({ device_id }) => {
-            setLoadMessage(null)
-            //await WebPlayer.setLatestPlayingTrack()
-            setPlayer(player)
-            console.log('Ready with Device ID', device_id);
-            await props.data.modifyLoginState(true); // TODO:cross check this
-        });
+            spotyPlayer.addListener('ready', async ({ device_id }) => {
+                setLoadMessage(null)
+                //await WebPlayer.setLatestPlayingTrack()
 
-        player.addListener('not_ready', ({ device_id }) => {
-            console.log('Device ID has gone offline', device_id);
-        });
+                console.log('Ready with Device ID', device_id);
 
-        player.connect(); //dont forget to uncomment to test connecting
+                let playerIsPaused = false;
+
+                if (playerState && playerState.state.paused) {
+                    playerIsPaused = playerState.state.paused
+                }
+                await WebPlayer.transferUserPlaybackHere(
+                    device_id,
+                    window.localStorage.getItem('access_token'),
+                    playerIsPaused);
+
+                //await props.data.modifyLoginState(true); // TODO:cross check this
+            });
+
+            spotyPlayer.addListener('not_ready', ({ device_id }) => {
+                console.log('Device ID has gone offline', device_id);
+            });
+
+            spotyPlayer.connect();
+        }
     }
 
+    if (props.data && props.data.autenticationFailed) {
+        return <Redirect to='/unauthorized' />
+    }
     return (
         <div>
             <h2>{currentSong ? currentSong.name : 'none'}</h2>
@@ -172,13 +192,13 @@ const SpotiPlayer = (props) => {
             <script src="https://sdk.scdn.co/spotify-player.js"></script>
             <p>This is spotify player component</p>
             <div>
-                <button onClick={togglePlayback}>{trackIsPlaying ? "pause" : "play"}</button>
+                <button onClick={togglePlayback}>{playerState && playerState.paused ? "play" : "pause"}</button>
                 <button onClick={handlePlayPreviousTrack}>Previous</button>
                 <button onClick={handlePlayNextTrack}>Next</button>
-                <button onClick={() => props.tracking.saveSongToPlaylist(songId)}>Save it</button>
             </div>
         </div>
     );
+
 }
 
 export default SpotiPlayer;

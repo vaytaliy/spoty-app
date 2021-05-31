@@ -14,67 +14,83 @@ import AuthLogic from './components/logic/Auth';
 const App = () => {
 
 	const [isLoggedIn, setIsLoggedIn] = useState(true);
-	const [loginAttemptSuccess, loginAttemptFail] = useState(false);
+	const [authRefreshTimerIsCreated, setAuthRefreshTimerIsCreated] = useState(false);
+	const [credentials, setCredentials] = useState(
+		{
+			accessToken: window.localStorage.getItem('access_token') || null,
+			refreshToken: window.localStorage.getItem('refresh_token') || null
+		}
+	);
+	const [authenticationFailed, setAuthenticationFailed] = useState(false);
 
-	let success = false;
-	const accessToken = window.localStorage.getItem('access_token');
-	console.log(accessToken);
+	let authRefreshTimeout = null;
 
-	const modifyLoginState = (loginIsSuccessful) => {
+	// useEffect(() => {	//remove this if i explicitly want to reauth every 60 mins
 
-		console.log('the login state is set to', loginIsSuccessful);
-		setIsLoggedIn(loginIsSuccessful);
+	// 	clearTimeout(authRefreshTimeout);
+
+	// 	if (!authRefreshTimerIsCreated) {
+	// 		setAuthRefreshTimerIsCreated(true);
+	// 		authRefreshTimeout = setTimeout(runRefreshAuthorization, 60 * 60 * 1000);
+	// 	}
+
+	// }, [authRefreshTimerIsCreated])
+
+
+	const runRefreshAuthorization = () => {
+		console.log('making reauth')
+		setRefreshedTokens();
+		setAuthRefreshTimerIsCreated(false);
 	}
 
+	const accessToken = window.localStorage.getItem('access_token');
+
+	// const modifyLoginState = (loginIsSuccessful) => {
+
+	// 	console.log('the login state is set to', loginIsSuccessful);
+	// 	setIsLoggedIn(loginIsSuccessful);
+	// }
+
 	const setRefreshedTokens = async () => {
+
 
 		const res = await AuthLogic.tryRefreshTokens();
 
 		if (res.successResult) {
 
+			setCredentials(res.credentials)
 			console.log("renewed the credentials")
 			setIsLoggedIn(true);
+			setAuthenticationFailed(false);
+			//window.location.reload();
 
 		} else if (res.error) {
 
+			setIsLoggedIn(true);
 			console.log("couldn't renew credentials")
 			setIsLoggedIn(false);
-			loginAttemptFail(true);
+			setAuthenticationFailed(true);
 		}
 	}
 
-	// if (!accessToken){
-	// 	success = false
-	// 	//setIsLoggedIn(false);
-	// } else {
-	// 	success = true;
-	// 	//setIsLoggedIn(true);
-	// }
-
-	// useEffect(() => {
-	// 	if (!isLoggedIn){
-	// 		success = false;
-	// 	}
-	// }, [isLoggedIn])
-
 	return (
 		<div>
+			<Route exact path='/'> <Landing /></Route>
 			<Route path='/home'>
-				{loginAttemptFail ? <Home data={{ modifyLoginState, setRefreshedTokens }} /> : <Redirect to='/unauthorized' />}
+				{isLoggedIn ? <Home data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed }} /> : <Redirect to='/unauthorized' />}
 			</Route>
-			<Route path='/unauthorized'>
-				<Login />
+			{/* <Route path='/unauthorized' data={{ isLoggedIn }} render={(isLoggedIn) => {
+				if (!isLoggedIn) {
+					return <Login />
+				}
+			}}>
+			</Route> */}
+			<Route path='/unauthorized'> <Login />
 			</Route>
 			<Route path='/callback'>
-				<CallbackComponent data={{ modifyLoginState }} />
+				<CallbackComponent />
 			</Route>
 		</div>
-		// <Router>
-		// 	<Route exact path='/' component={Landing} />
-		// 	<Route path='/main' component={Home} />
-		// 	<Route path='/unauthorized' component={Login} />
-		// 	<Route path='/callback' component={CallbackComponent} />
-		// </Router>
 	);
 }
 

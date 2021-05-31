@@ -6,7 +6,7 @@ const Tracker = {
         if (!requestData.songId) {
             return { result: "failure" }
         }
-        //requestData.accessToken
+
         if (trackedMusicThisSession.has(requestData.songId)) {
 
             console.log("already in memory");
@@ -34,10 +34,6 @@ const Tracker = {
         return parsedRes;
     },
 
-
-
-    //TODO part of functionality
-
     saveSongToPlaylistRequest: async (songId, accessToken, playlistId) => {
 
         const res = await fetch('https://localhost:44370/tracker/add_to_playlist', {        // add autoplaylist functionality
@@ -64,10 +60,6 @@ const Tracker = {
         }
         return false;
     }
-
-    //playlist id can be taken from URL
-    // if person listens to music in fresh playlist, it wont be removed from there. It's up to user to do so
-
 }
 
 export default Tracker;
