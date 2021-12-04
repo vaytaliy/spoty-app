@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpotifyDiscovery.Data;
 using SpotifyDiscovery.Objects;
-using SpotifyDiscovery.Utilities;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -23,18 +22,15 @@ namespace SpotifyDiscovery.Controllers
         private readonly IConfiguration _configuration;
         private readonly HttpClient _client;
         private readonly ILogger<AuthController> _logger;
-        private readonly AccountService _accountService;
 
         public AuthController(IConfiguration configuration, 
             HttpClient client, 
-            ILogger<AuthController> logger,
-            AccountService accountService)
+            ILogger<AuthController> logger)
         {
             _configuration = configuration;
-            _accountService = accountService;
             _client = client;
             _logger = logger;
-            var bytes = Encoding.UTF8.GetBytes(_configuration["ClientId"] + ":" + _configuration["ClientSecret"]);
+            var bytes = Encoding.UTF8.GetBytes($"{_configuration["ClientId"]}:{_configuration["ClientSecret"]}");
             var idAndSecretEncoded = WebEncoders.Base64UrlEncode(bytes);
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", idAndSecretEncoded);
@@ -45,10 +41,10 @@ namespace SpotifyDiscovery.Controllers
         {
             var scopes = "user-read-email user-read-private streaming user-modify-playback-state user-read-currently-playing user-read-playback-position playlist-read-private playlist-modify-public playlist-modify-private";
 
-            Response.Redirect($"https://accounts.spotify.com/authorize?response_type={"code"}&" +
+            Response.Redirect($"{_configuration["Spotify:AuthorizationLink"]}?response_type=code&" +
                 $"client_id={_configuration["ClientId"]}" +
                 $"&scope={WebUtility.UrlEncode(scopes)}" +
-                $"&redirect_uri={WebUtility.UrlEncode(_configuration["RedirectUri"])}");
+                $"&redirect_uri={WebUtility.UrlEncode($"{_configuration["Hosting:BaseURL"]}/{_configuration["Spotify:RedirectPath"]}")}");
         }
 
         [HttpGet("authorization")]
@@ -59,7 +55,7 @@ namespace SpotifyDiscovery.Controllers
             if (queryDict.ContainsKey("error"))
             {
                 //send error response
-                Response.Redirect(Helper.BaseURL + "/main" + $"?error={queryDict["error"]}");
+                Response.Redirect($"{_configuration["Hosting:BaseURL"]}/main?error={queryDict["error"]}");
                 return;
             }
 
@@ -67,12 +63,8 @@ namespace SpotifyDiscovery.Controllers
             {
                 new KeyValuePair<string, string>("grant_type", "authorization_code"),
                 new KeyValuePair<string, string>("code", WebUtility.UrlEncode(queryDict["code"])),
-                new KeyValuePair<string, string>("redirect_uri", _configuration["RedirectUri"])
+                new KeyValuePair<string, string>("redirect_uri", $"{_configuration["Hosting:BaseURL"]}/{_configuration["Spotify:RedirectPath"]}")
             });
-
-            _logger.LogInformation(_configuration["RedirectUri"]);
-
-            
 
             using var response = await _client.PostAsync("https://accounts.spotify.com/api/token", requestContent);
 
@@ -83,21 +75,13 @@ namespace SpotifyDiscovery.Controllers
 
                 TokenObject tokenObject = (TokenObject)JsonSerializer.Deserialize(responseContent, typeof(TokenObject));
 
-                var playlistId = await _accountService.FindUserGetDatabasePlaylist(tokenObject.AccessToken);
-
-                if (playlistId == null)
-                {
-                    //TODO test if thats possible
-                    Response.Redirect(Helper.BaseURL + "/callback" + $"?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
-                }
-
-                Response.Redirect(Helper.BaseURL + "/callback" + $"?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}&playlist={playlistId}");
+                Response.Redirect($"{_configuration["Hosting:BaseURL"]}/callback?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
                 return;
             }
 
             var resMsg = await response.Content.ReadAsStringAsync();
             _logger.LogInformation(resMsg);
-            Response.Redirect(Helper.BaseURL + "/callback" + $"?error=invalid_token");
+            Response.Redirect($"{_configuration["Hosting:BaseURL"]}/callback?error=invalid_token");
         }
 
         [HttpPost("refresh_token")]

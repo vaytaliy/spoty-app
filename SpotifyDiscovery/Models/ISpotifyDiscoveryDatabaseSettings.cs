@@ -7,5 +7,6 @@
         string PlayedMusicCollectionName { get; set; }
         string RoomCollectionName { get; set; }
         string ConnectionString { get; set; }
+        string InMemoryDatabaseConnection { get; set; }
     }
 }

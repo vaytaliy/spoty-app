@@ -12,3 +12,19 @@ code {
   background-color: #1b6ec2;
   border-color: #1861ac;
 }
+
+.chat-active-user-false {
+  background-color: #1b6ec2
+}
+
+.chat-active-user-true {
+  background-color: #1bc237
+}
+
+#messageArea {
+  width: 80%; /* or whatever width you want. */
+  height: 40%;
+  max-height: 200px;
+  overflow-y: auto;
+  display: inline-block;
+}

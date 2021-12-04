@@ -1,11 +1,9 @@
 import { trackedMusicThisSession } from '../storage/InMemoryStorage';
+import AppInfo from '../../constants';
 
 const Tracker = {
 
-    handleSongRegistrationRequest: async (requestData) => {
-        if (!requestData.songId) {
-            return { result: "failure" }
-        }
+    handleSongRegistrationRequest: async (requestData, accessToken) => {
 
         if (trackedMusicThisSession.has(requestData.songId)) {
 
@@ -13,10 +11,15 @@ const Tracker = {
             return { result: "in_memory" };
         }
 
-        const res = await fetch('https://localhost:44370/tracker/register', {
+        if (!requestData.songId) {
+            return { result: "failure" }
+        }
+
+        const res = await fetch(`tracker/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify({
                 accountId: requestData.accountId,
@@ -28,37 +31,60 @@ const Tracker = {
             return { result: "failure" };
         }
 
+        console.log("ok")
         trackedMusicThisSession.add(requestData.songId);
         const parsedRes = await res.json();
 
         return parsedRes;
     },
 
-    saveSongToPlaylistRequest: async (songId, accessToken, playlistId) => {
+    saveSongToPlaylistRequest: async (songId, accessToken) => {
 
-        const res = await fetch('https://localhost:44370/tracker/add_to_playlist', {        // add autoplaylist functionality
+        const res = await fetch(`tracker/add_to_playlist`, {        // add autoplaylist functionality
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify({
                 songId,
-                playlistId,
                 accessToken
             })
         });
 
         if (res.status == 201) {
-
-            //saved song
             return true;
         }
+
+        if (res.status == 401) {
+            return false;
+        }
+
         else if (res.status == 403) {
-            
+
             console.log("playlist size exceeded");
             return false;
         }
         return false;
+    },
+
+    getPlaylist: async (accessToken) => {
+        const res = await fetch(`tracker/get_playlist`, {        // add autoplaylist functionality
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        const parsedRes = await res.json();
+
+        if (res.status == 200) {
+            console.log("parsed res", parsedRes)
+            return { playlistId: parsedRes.playlistId }
+        }
+
+        return { responseType: "error", description: "error fetching playlist" }
     }
 }
 

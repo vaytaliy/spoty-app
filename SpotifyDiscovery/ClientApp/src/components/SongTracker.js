@@ -3,6 +3,7 @@ import Tracker from './logic/Tracker';
 import SpotiPlayer from './SpotiPlayer';
 import Auth from './logic/Auth';
 
+
 const SongTracker = (props) => {
 
     let autoskip = window.localStorage.getItem("autoSkip") || false;
@@ -16,33 +17,39 @@ const SongTracker = (props) => {
     const [songId, setSongId] = useState(null);
 
     let timeout = null;
+    //let playlistIdGet = Tracker.getPlaylistId(window.localStorage.getItem('access_token'));
 
     useEffect(() => {
         const playlistId = window.localStorage.getItem('playlist_id');
-        console.log(playlistId);
-        if (playlistId) {
 
+        if (playlistId === '') {
             setPlaylistId(`https://open.spotify.com/playlist/${playlistId}`);
+        } else {
+            getPlaylistId()
         }
     }, [])
 
-    useEffect(() => {
-        //console.log('songid worked lol')
-        //console.log(songId);
-    }, [songId])
+    const getPlaylistId = async () => {
+
+        const accessToken = window.localStorage.getItem("access_token");
+        const playlistResult = await Tracker.getPlaylist(accessToken);
+        console.log("playlist result", playlistResult)
+
+
+        if (playlistResult && playlistResult.playlistId) {
+            setPlaylistId(playlistResult.playlistId)
+            return;
+        }
+        setPlaylistId('')
+    }
 
     const setCurrentSongId = async (playbackData) => {
 
         const currentSong = songId;
-        //console.log(playbackData.songId);
-        //setSongId(playbackData.songId);
-        //console.log(songId);
-        //console.log(playbackData.songId);
 
-        if (currentSong != songId){
-           
+        if (currentSong != songId) {
             await registerSong(playbackData);
-        } 
+        }
     }
 
     const renderSuccessResultMessage = (resultMessage) => {
@@ -82,25 +89,19 @@ const SongTracker = (props) => {
     const saveSongToPlaylist = async () => {
 
         let accessToken = window.localStorage.getItem("access_token");
-        let playlistId = window.localStorage.getItem("playlist");
-        console.log(songId)
 
         if (songId) {
-            await Tracker.saveSongToPlaylistRequest(songId, accessToken, playlistId);
+            console.log("access token", accessToken)
+            await Tracker.saveSongToPlaylistRequest(songId, accessToken);
         }
     }
 
-    //requestData contains such:
-    // accessToken
-    // accountId (nullable)
-    // songId
-    const processSongRegistration = async (requestData) => {
+    const processSongRegistration = async (requestData, accessToken) => {
 
-        let res = await Tracker.handleSongRegistrationRequest(requestData)
+        let res = await Tracker.handleSongRegistrationRequest(requestData, accessToken)
 
         if (res == "failure" && retryAttempts < 5) {
             setRetryAttempts(retryAttempts += 1);
-            //registerSong();
         } else if (res == "failure" && retryAttempts >= 5) {
             res.result = "retry_error";
         }
@@ -113,22 +114,32 @@ const SongTracker = (props) => {
     const registerSong = async (requestData, autoPlaylistURL = null) => {
 
         setRegisterMessage({ status: "wait", message: "Checking the song in the system.." });
+        const accessToken = window.localStorage.getItem("access_token");
+
         console.log('registering song')
-        let requestedUser = await Auth.requestAccountId(requestData.accessToken) //
 
-        if (requestedUser.errorMessage) {
-
-            console.log("error getting user")
-            return; //TODO Handle that error, it is authorization error
-        }
-
-        requestData.accountId = requestedUser.id; // set to found id
         clearTimeout(timeout);
 
         if (!requestTimeoutIsCreated) {
 
             setRequestTimeoutIsCreated(true);
-            timeout = setTimeout(async () => await processSongRegistration(requestData), 2000) // to give some delay on song processing and unload server
+            timeout = setTimeout(async () => await processSongRegistration(requestData, accessToken), 2000) // to give some delay on song processing and unload server
+        }
+    }
+
+    const drawPlaylist = () => {
+
+        if (playlistId !== '') {
+            return (
+                <div>
+                    <a href={`https://open.spotify.com/playlist/${playlistId}`}>See playlist</a>
+                </div>
+            );
+        } else {
+            return (<div>
+                Something went wrong and playlist is not available
+            </div>
+            );
         }
     }
 
@@ -145,9 +156,9 @@ const SongTracker = (props) => {
                     onChange={handleAutoskipChange}
                 />
             </label>
-            <a href={playlistId}>See playlist</a>
+            {drawPlaylist()}
             <button onClick={saveSongToPlaylist}>Save to playlist</button>
-            <SpotiPlayer data={props.data} tracking={{ registerSong, skipSong, autoskipIsEnabled, saveSongToPlaylist, setCurrentSongId, songId, setSongId }} />
+            <SpotiPlayer data={props.data} playerControl={{ skipSong }} tracking={{ registerSong, skipSong, autoskipIsEnabled, saveSongToPlaylist, setCurrentSongId, songId, setSongId }} />
         </div>
     );
 }

@@ -1,13 +1,10 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SpotifyDiscovery.Data;
 using SpotifyDiscovery.Dtos;
-using SpotifyDiscovery.Models;
+using SpotifyDiscovery.Filters;
+using SpotifyDiscovery.Services;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Controllers
@@ -19,60 +16,63 @@ namespace SpotifyDiscovery.Controllers
         private readonly SongTrackerService _songTrackerService;
         private readonly AccountService _accountService;
         private readonly ILogger<SongTrackerController> _logger;
-        private readonly IMapper _mapper;
         public SongTrackerController(
             SongTrackerService songTrackerService,
             ILogger<SongTrackerController> logger,
-            AccountService accountService,
-            IMapper mapper)
+            AccountService accountService)
         {
             _songTrackerService = songTrackerService;
             _logger = logger;
-            _mapper = mapper;
             _accountService = accountService;
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> TrackSong([FromBody] TrackSongDto trackSongDto)
-        {     
-            var trackerResult = await _songTrackerService.SaveNewSongId(
-                trackSongDto.AccountId, trackSongDto.SongId);
+        [SpotifyAuthFilter]
+        public async Task<IActionResult> Register([FromBody] TrackSongDto trackSongDto)
+        {
+            var spotifyProfile = (ProfileReadDto)HttpContext.Items["User"];
 
-            return Ok(
-                    new
-                    {
-                        result = trackerResult
-                    }
-                );
+            try
+            {
+                var trackerResult = await _songTrackerService.SaveNewSongId(
+                    spotifyProfile.SpotifyId, trackSongDto.SongId, spotifyProfile);
+
+                return Ok(new { result = trackerResult });
+            }
+            catch (Exception ex)
+            {
+                
+                _logger.LogError(ex.Message);
+                return StatusCode(500);
+            }
         }
 
         [HttpPost("add_to_playlist")]
+        [SpotifyAuthFilter]
         public async Task<IActionResult> AddToPlaylist(AddSongToPlaylistDto addSongToPlaylistDto)
         {
-            //var AuthenticationHeaderValue.Parse("Bearer");
-            var playlistId = await _accountService.FindUserGetDatabasePlaylist(addSongToPlaylistDto.AccessToken);
+            var spotifyProfile = (ProfileReadDto)HttpContext.Items["User"];
+
+            var playlistId = await _accountService.FindUserGetDatabasePlaylist(spotifyProfile);
             addSongToPlaylistDto.PlaylistId = playlistId;
 
-            var isSuccessful = await _accountService.SaveToPlaylist(addSongToPlaylistDto);
-            
+            var isSuccessful = await _accountService.SaveToPlaylist(addSongToPlaylistDto, spotifyProfile);
+
             if (isSuccessful)
             {
                 return Ok();
             }
-
             return Forbid();
         }
 
-        [HttpPost("test")]
-        public IActionResult Test()
+        [HttpGet("get_playlist")]
+        [SpotifyAuthFilter]
+        public async Task<IActionResult> GetPlaylist()
         {
+            var spotifyProfile = (ProfileReadDto)HttpContext.Items["User"];
+            var playlistId = await _accountService.FindUserGetDatabasePlaylist(spotifyProfile);
 
-            return Ok(
-                    new
-                    {
-                       data = "it works"
-                    }
-                );
+            return Ok(new { playlistId });
         }
     }
 }

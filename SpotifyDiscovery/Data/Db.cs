@@ -1,4 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using SpotifyDiscovery.Models;
 using System;
 using System.Collections.Generic;
@@ -11,20 +13,37 @@ namespace SpotifyDiscovery.Data
     {
         public readonly MongoClient client;
         public readonly IMongoDatabase database;
+        private readonly ILogger<Db> _logger;
 
         public readonly IMongoCollection<Account> Account;
         public readonly IMongoCollection<PlayedMusic> PlayedMusic;
         public readonly IMongoCollection<Room> Room;
+        private readonly IConfiguration _c;
 
 
-        public Db(ISpotifyDiscoveryDatabaseSettings settings)
+        public Db(IConfiguration configuration, ILogger<Db> logger)
         {
-            client = new MongoClient(settings.ConnectionString);
-            database = client.GetDatabase(settings.DatabaseName);
+            _logger = logger;
+            _c = configuration;
+            var connString = $"{_c["SpotifyDiscoveryDatabaseSettings:DbURL"]}";
+            _logger.LogInformation(connString);
+            client = new MongoClient(connString);
+            database = client.GetDatabase("SpotifyDiscovery");
 
-            Account = database.GetCollection<Account>(settings.AccountCollectionName);
-            PlayedMusic = database.GetCollection<PlayedMusic>(settings.PlayedMusicCollectionName);
-            Room = database.GetCollection<Room>(settings.RoomCollectionName);
+            Account = database.GetCollection<Account>("AccountCollectionName");
+            PlayedMusic = database.GetCollection<PlayedMusic>("PlayedMusic");
+            Room = database.GetCollection<Room>("Room");
+
+            CreatePlayedMusicListIndex();
+        }
+
+        public void CreatePlayedMusicListIndex()
+        {
+            var trackedSongsIndexModel = new CreateIndexModel<PlayedMusic>(
+                Builders<PlayedMusic>.IndexKeys.Ascending(pm => pm.SongIdList),
+                new CreateIndexOptions()
+            );
+            PlayedMusic.Indexes.CreateOneAsync(trackedSongsIndexModel);
         }
     }
 }

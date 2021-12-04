@@ -1,0 +1,41 @@
+{
+  "room_id": "hostpersonconnid",
+  "connection_detail": [
+    {
+      "display_name": "Bob",
+      "id": "spotifyid11111",
+      "images": [
+        {
+          "width": 1000,
+          "height": 300,
+          "url": "person1_im_url"
+        },
+        {
+          "width": 500,
+          "height": 300,
+          "url": "person1_im_url2"
+        }
+      ],
+      "connection_id": "connidperson1",
+      "is_host": false
+    },
+    {
+      "display_name": "Gob",
+      "id": "spotifyid22222",
+      "images": [
+        {
+          "width": 1000,
+          "height": 300,
+          "url": "person2_im_url"
+        },
+        {
+          "width": 500,
+          "height": 300,
+          "url": "person2_im_url2"
+        }
+      ],
+      "connection_id": "hostpersonconnid",
+      "is_host": true
+    }
+  ]
+}

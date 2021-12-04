@@ -15,5 +15,9 @@ namespace SpotifyDiscovery.Dtos
         public string SpotifyId { get; set; }
         [JsonPropertyName("images")]
         public List<ImageObject> Images { get; set; }
+        [JsonPropertyName("connection_id")]
+        public string ConnectionId { get; set; } //for ws conn
+        [JsonPropertyName("is_host")]
+        public bool IsHost { get; set; } = false;
     }
 }

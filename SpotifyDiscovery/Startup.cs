@@ -1,3 +1,4 @@
+using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
@@ -6,8 +7,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SpotifyDiscovery.Data;
+using SpotifyDiscovery.Filters;
+using SpotifyDiscovery.Hubs;
 using SpotifyDiscovery.Models;
+using SpotifyDiscovery.Realtime;
+using SpotifyDiscovery.Services;
+using SpotifyDiscovery.Utilities;
 using System.Net.Http;
+using Serilog;
+using Serilog.Events;
 
 namespace SpotifyDiscovery
 {
@@ -20,37 +28,56 @@ namespace SpotifyDiscovery
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddOptions();
+            services.AddMemoryCache();
+            services.Configure<IpRateLimitOptions>(Configuration.GetSection("IpRateLimiting"));
+            services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
+            services.AddInMemoryRateLimiting();
+
             services.Configure<SpotifyDiscoveryDatabaseSettings>(
                     Configuration.GetSection(nameof(SpotifyDiscoveryDatabaseSettings))
             );
-            //services.AddCors();
-
+            services.AddCors(options =>
+            {
+                options.AddPolicy("cors_policy", builder =>
+                {
+                    builder.WithOrigins(Configuration["Hosting:BaseURL"]);
+                });
+            });
+            services.AddSignalR();
             services.AddSingleton<ISpotifyDiscoveryDatabaseSettings>(sp =>
                 sp.GetRequiredService<IOptions<SpotifyDiscoveryDatabaseSettings>>().Value);
 
-            services.AddSingleton<Db>();
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+            services.AddScoped<IInMemoryDb, RedisInMemoryDb>();
+            
+            services.AddScoped<Db>();
+            services.AddScoped<ISpotiRepository, DbSpotiRepository>();
             services.AddAutoMapper(typeof(Startup));
 
             services.AddScoped<HttpClient>();
             services.AddScoped<SongTrackerService>();
             services.AddScoped<AccountService>();
+            services.AddScoped<SharedPlayerService>();
+            services.AddScoped<IRoomManager, RoomManager>();
+            //services.AddSingleton<ILogger, ErrorWriter>();
 
-            services.AddControllersWithViews();
+            services.AddScoped<SpotifyAuthFilterAttribute>();
+            services.AddAuthentication();
+            services.AddControllers();
             services.AddLogging();
-
-            // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
             {
                 configuration.RootPath = "ClientApp/build";
             });
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseIpRateLimiting();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -60,7 +87,7 @@ namespace SpotifyDiscovery
                 app.UseExceptionHandler("/Error");
                 app.UseHsts();
             }
-
+            app.UseSerilogRequestLogging();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
@@ -68,9 +95,8 @@ namespace SpotifyDiscovery
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    name: "default",
-                    pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapControllers();
+                endpoints.MapHub<SharedPlayerHub>("/playerHub");
             });
 
             app.UseSpa(spa =>

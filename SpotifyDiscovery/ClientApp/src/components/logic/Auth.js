@@ -1,3 +1,5 @@
+import Account from './Account';
+import AppInfo from '../../constants';
 
 const saveTokens = (accessToken, refreshToken) => {
     if (refreshToken) {
@@ -21,7 +23,7 @@ const AuthLogic = {
             return;
         }
 
-        const res = await fetch('https://localhost:44370/discovery/refresh_token', {
+        const res = await fetch(`discovery/refresh_token`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -37,24 +39,22 @@ const AuthLogic = {
 
             const tokenSaveResult = saveTokens(parsedRes.access_token, parsedRes.refresh_token)
 
-            return {successResult: tokenSaveResult, 
+            return {
+                successResult: tokenSaveResult,
                 credentials: {
                     accessToken: window.localStorage.getItem('access_token'),
                     refreshToken: window.localStorage.getItem('refresh_token')
-                }};
+                }
+            };
         }
 
-        return {error: 'unauthorized'}
+        return { error: 'unauthorized' }
         //refresh token might not come with request
         //has access_token, also it may contain refresh_token
     },
 
     // runs from ./callback?token=..
-    saveCreds: (accessToken, refreshToken, playlistId) => {
-        console.log(playlistId)
-        if (playlistId){
-            window.localStorage.setItem('playlist_id', playlistId);
-        }
+    saveCreds: (accessToken, refreshToken) => {
 
         if (!accessToken) {
             console.log('return error authenticating, redirect user to auth again');
@@ -71,7 +71,7 @@ const AuthLogic = {
     },
 
     requestAccountId: async (accessToken) => {
-        
+
         const res = await fetch('https://api.spotify.com/v1/me', {
             method: 'GET',
             headers: {
@@ -80,13 +80,30 @@ const AuthLogic = {
             }
         });
 
-        if (res.status == 200){
-            
-            const parsedRes = await res.json();
-            return parsedRes;
+        if (res.status == 200) {
+
+            const userData = await res.json();
+            //Account.activeUser = userData; // sets current user
+            console.log("spotify identifier")
+            console.log(userData);
+            return userData;
         }
 
-        return {errorMessage: 'err getting user id'}
+        return { errorMessage: 'err getting user id' }
+    },
+
+    getAccountInformation: async (accessToken, userId) => {
+        const res = await fetch(`https://api.spotify.com/v1/users/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (res.status == 200) {
+            return res
+        }
     }
 }
 
