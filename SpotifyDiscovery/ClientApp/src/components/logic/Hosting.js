@@ -1,4 +1,4 @@
-import WebPlayer from "./WebPlayer";
+import WebPlayerStateManager from "./WebPlayerStateManager";
 import AppInfo from "../../constants";
 import AuthLogic from "./Auth";
 
@@ -7,9 +7,10 @@ const Hosting = {
     connection: null,
     connectedUsersInformation: new Map(),
     roomId: null,
-    uiControls: null,
-    spotiPlayer: null,
     deviceId: null,
+    uiControls: null,
+    profileId: "",
+    accessToken: "",
 
     listen: function () {
         this.connection.on("ReceiveMessage", (message) => {
@@ -25,26 +26,55 @@ const Hosting = {
         });
 
         this.connection.on("error", (message) => {
-            console.log("error message")
+            console.log("error message", message)
         });
 
-        this.connection.on("room-hosting-success", () => {
+        this.connection.on("room-hosting-success", async () => {
             this.connectedUsersInformation = new Map();
+            await this.connection.invoke("GetActiveSongInRoom", this.roomId, this.accessToken); //for testing
+            this.uiControls.initIsHost(true);
             console.log("successfuly hosting room");
         });
 
-        this.connection.on("room-listener-success", () => {
+        this.connection.on("success-settings-change", (change) => {
+            console.log(change);
+        });
+
+        this.connection.on("error-settings-change", (error) => {
+            console.log(error);
+        });
+
+        this.connection.on("room-host-option-changes", (change) => {
+            if (change && change.description === "new_password") {
+                console.log("must prompt new password to reconnect");
+                this.uiControls.handleRoomLoginRequired(true);
+            }
+            console.log(change);
+        });
+
+        this.connection.on("room-listener-success", async () => {
             this.connectedUsersInformation = new Map(); //need to clear it after changing rooms for example
             console.log("success, listening to the room now");
+            await this.connection.invoke("GetActiveSongInRoom", this.roomId, this.accessToken);
+            this.uiControls.initIsHost(false)
+        });
+
+        this.connection.on("init-song-receive", async (songId) => {
+            console.log("this is the current song", songId)
+            await WebPlayerStateManager.playSongById(this.accessToken, songId, this.deviceId)
         });
 
         this.connection.on("song-update", async (newSongId, hostConnectionId) => {
+            console.log("playing new song", newSongId)
+            //if (this.connection.connectionId !== hostConnectionId) {
+            console.log("you are listening to new song!", newSongId)
+            await WebPlayerStateManager.playSongById(window.localStorage.getItem("access_token"), newSongId, this.deviceId);
+            //await this.spotiPlayer.resume();
+            //}
+        });
 
-            if (this.connection.connectionId !== hostConnectionId) {
-                console.log("you are listening to new song!", newSongId)
-                await WebPlayer.playSongById(window.localStorage.getItem("access_token"), newSongId, this.deviceId);
-                await this.spotiPlayer.resume(); //not awaiting
-            }
+        this.connection.on("host-room-settings-information", (roomSettings) => {
+            this.uiControls.handleOnloadRoomHostOptions(roomSettings);
         });
 
         this.connection.on("listener-disconnected", (spotifyId) => {
@@ -110,20 +140,49 @@ const Hosting = {
         await this.connection.invoke("SendMessageInRoom", messageData, window.localStorage.getItem('access_token'), this.roomId);
     },
 
-    connectToRoom: async function (roomId, accessToken, uiControls, spotiPlayer, deviceId) {
+    associateConnectionToProfile: async function () {
+        console.log("2 associating")
+        console.log(this.connection.connectionState)
+        await this.connection.invoke("ConnectAccount", this.profileId);
+    },
+
+    changeRoomProperties: async function (requestedChanges) {
+        await this.connection.invoke("ChangeRoomProperties", this.profileId, requestedChanges);
+    },
+
+    connectToRoom: async function (roomId, uiControls, roomPassword = "") {
         this.uiControls = uiControls;
-        this.spotiPlayer = spotiPlayer;
         this.roomId = roomId;
-        this.deviceId = deviceId;
-        let joinHostResultRaw = await fetch(`room_api/${roomId}?connId=${this.connection.connectionId}&authToken=${accessToken}`, {
+        this.accessToken = this.uiControls.credentials.accessToken;
+        this.roomPassword = roomPassword;
+
+        console.log("requested conn")
+        const userData = await AuthLogic.requestAccountId(this.accessToken)
+        console.log(userData)
+        //await this.start()
+        if (userData.id) {
+            this.profileId = userData.id
+            this.associateConnectionToProfile()
+        } else {
+            await this.uiControls.runRefreshAuthorization()
+        }
+
+        console.log(this.roomId)
+        let joinHostResultRaw = await fetch(`room_api/${this.roomId}?connId=${this.connection.connectionId}&authToken=${this.accessToken}&password=${this.roomPassword}`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${accessToken}`
+                'Authorization': `Bearer ${this.accessToken}`
             }
         });
 
-        if (joinHostResultRaw.status != 200) {
-            throw {error: "error", message: "unable to host/join room"}
+        const joinHostResult = await joinHostResultRaw.json();
+
+        if (joinHostResult && joinHostResult.error) {
+            if (joinHostResult.error === "password_error") {
+                console.log("password required")
+                this.uiControls.handleRoomLoginRequired(true);
+            }
+            this.uiControls.handleRoomError(joinHostResult);
         }
     },
 
@@ -144,6 +203,8 @@ const Hosting = {
             .configureLogging(window.signalR.LogLevel.Information)
             .build();
         await this.start(); //TODO fix this: have to await this to work fine
+
+
         this.listen();
     }
 }

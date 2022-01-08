@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using SpotifyDiscovery.Dtos;
+using SpotifyDiscovery.Utilities;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Filters
 {
-    public class SpotifyAuthFilterAttribute : Attribute, IAsyncActionFilter
+    public class SpotifyAuthFilter : Attribute, IAsyncActionFilter
     {
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
@@ -29,7 +30,7 @@ namespace SpotifyDiscovery.Filters
 
             if (isValidHeader)
             {
-                var userProfile = await GetProfileFromTokenSpotify(accessToken.Parameter);
+                var userProfile = await SpotifyAuthorizationUtil.GetProfileFromTokenSpotify(accessToken.Parameter);
 
                 if (userProfile != null)
                 {
@@ -44,25 +45,6 @@ namespace SpotifyDiscovery.Filters
                 ContentType = "application/json",
                 StatusCode = 401
             };
-        }
-
-        private static async Task<ProfileReadDto> GetProfileFromTokenSpotify(string accessToken)
-        {
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            using var response = await httpClient.GetAsync("https://api.spotify.com/v1/me");
-
-            if (response.IsSuccessStatusCode)
-            {
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-                ProfileReadDto userProfile = (ProfileReadDto)JsonSerializer.Deserialize(responseContent, typeof(ProfileReadDto));
-
-                return userProfile;
-            }
-
-            return null;
         }
     }
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Redirect } from 'react-router';
-import WebPlayer from './logic/WebPlayer';
+import { Navigate } from 'react-router';
+import WebPlayerStateManager from './logic/WebPlayerStateManager';
 import AuthLogic from './logic/Auth';
 import Hosting from './logic/Hosting';
 import Skeleton from '@mui/material/Skeleton'
@@ -42,6 +42,18 @@ const SpotiPlayer = (props) => {
         document.body.appendChild(spotyPlayerScript);
 
         return () => {
+            if (spotyPlayer) {
+                spotyPlayer.removeListener('player_state_changed')
+                spotyPlayer.removeListener('initialization_error') //remove if causes bugs
+                spotyPlayer.removeListener('account_error')
+                spotyPlayer.removeListener('playback_error')
+                spotyPlayer.removeListener('authentication_error')
+                spotyPlayer.removeListener('player_state_changed')
+                spotyPlayer.removeListener('ready')
+                spotyPlayer.removeListener('not_ready')
+                spotyPlayer.disconnect();
+            }
+            
             document.body.removeChild(spotyPlayerScript);
         }
     }, [])
@@ -107,6 +119,14 @@ const SpotiPlayer = (props) => {
         return player;
     }
 
+    const getSpotyPlayer = async () => {
+        if (spotyPlayer == null) {
+            await reinitializePlayer()
+        }
+
+        return spotyPlayer;
+    }
+
 
     const addListeners = async () => {
         spotyPlayer.addListener('initialization_error', ({ message }) => { console.error(message); });
@@ -117,7 +137,7 @@ const SpotiPlayer = (props) => {
             console.error(message);
 
             if (deviceId) {
-                await WebPlayer.transferUserPlaybackHere(
+                await WebPlayerStateManager.transferUserPlaybackHere(
                     deviceId,
                     window.localStorage.getItem('access_token'),
                     true);
@@ -134,7 +154,7 @@ const SpotiPlayer = (props) => {
         })
 
         spotyPlayer.addListener('player_state_changed', async state => {
-            let newSong = WebPlayer.handleStateChange(state, playerData.currentSongId);
+            let newSong = WebPlayerStateManager.handleStateChange(state, playerData.currentSongId);
             //may return new song object or null if current song isn't new
             console.log(state);
             setPlayerState(state)
@@ -162,35 +182,19 @@ const SpotiPlayer = (props) => {
             setErrorMessage(null)
             console.log('Ready with Device ID', device_id);
             deviceId = device_id;
+            if (props.data.windowmanage) {
+                props.data.windowmanage.setPlayerDeviceId(deviceId);
+            }
             let playerIsPaused = false;
 
             if (playerState && playerState.paused) {
                 playerIsPaused = playerState.paused
             }
 
-            WebPlayer.transferUserPlaybackHere(
+            WebPlayerStateManager.transferUserPlaybackHere(
                 device_id,
                 window.localStorage.getItem('access_token'),
                 !playerIsPaused);
-
-            if (props.sharing) {
-
-                const idOfGenericRoom = props.listeningTo //if not intended for hosting, id from pasted url
-                let roomId
-                const accessToken = window.localStorage.getItem('access_token');
-
-                if (idOfGenericRoom) {
-                    roomId = idOfGenericRoom;
-                } else {
-                    roomId = await AuthLogic.requestAccountId(accessToken);
-                }
-
-                try {
-                    await Hosting.connectToRoom(roomId, accessToken, props.uiControls, spotyPlayer, deviceId);
-                } catch (err) {
-                    setErrorMessage(err.message)
-                }
-            }
         });
 
         spotyPlayer.addListener('not_ready', ({ device_id }) => {
@@ -234,7 +238,7 @@ const SpotiPlayer = (props) => {
     }
 
     if (props.data && props.data.autenticationFailed) {
-        return <Redirect to='/unauthorized' />
+        return <Navigate to='/unauthorized' />
     }
 
     if (currentSong) {
@@ -261,4 +265,4 @@ const SpotiPlayer = (props) => {
 
 }
 
-export default SpotiPlayer;
+export {SpotiPlayer, deviceId};

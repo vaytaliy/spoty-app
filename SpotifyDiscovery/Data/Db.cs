@@ -45,5 +45,14 @@ namespace SpotifyDiscovery.Data
             );
             PlayedMusic.Indexes.CreateOneAsync(trackedSongsIndexModel);
         }
+
+        public void CreateRoomIndex()
+        {
+            var roomIndexModel = new CreateIndexModel<Room>(
+                Builders<Room>.IndexKeys.Ascending(pm => pm.OwnerId),
+                new CreateIndexOptions()
+                );
+            Room.Indexes.CreateOneAsync(roomIndexModel);
+        }
     }
 }

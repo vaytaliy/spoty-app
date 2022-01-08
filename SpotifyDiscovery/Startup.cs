@@ -16,6 +16,8 @@ using SpotifyDiscovery.Utilities;
 using System.Net.Http;
 using Serilog;
 using Serilog.Events;
+using System;
+using Microsoft.AspNetCore.SignalR;
 
 namespace SpotifyDiscovery
 {
@@ -47,12 +49,18 @@ namespace SpotifyDiscovery
                 });
             });
             services.AddSignalR();
+            services.AddStackExchangeRedisCache(opts => {
+                opts.Configuration = Configuration["SpotifyDiscoveryDatabaseSettings:InMemoryDatabaseConnection"];
+                opts.InstanceName = "CacheInstance";
+                }
+            );
+            
             services.AddSingleton<ISpotifyDiscoveryDatabaseSettings>(sp =>
                 sp.GetRequiredService<IOptions<SpotifyDiscoveryDatabaseSettings>>().Value);
 
             services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
             services.AddScoped<IInMemoryDb, RedisInMemoryDb>();
-            
+
             services.AddScoped<Db>();
             services.AddScoped<ISpotiRepository, DbSpotiRepository>();
             services.AddAutoMapper(typeof(Startup));
@@ -62,9 +70,8 @@ namespace SpotifyDiscovery
             services.AddScoped<AccountService>();
             services.AddScoped<SharedPlayerService>();
             services.AddScoped<IRoomManager, RoomManager>();
-            //services.AddSingleton<ILogger, ErrorWriter>();
 
-            services.AddScoped<SpotifyAuthFilterAttribute>();
+            services.AddScoped<SpotifyAuthFilter>();
             services.AddAuthentication();
             services.AddControllers();
             services.AddLogging();
@@ -78,7 +85,7 @@ namespace SpotifyDiscovery
         {
             app.UseIpRateLimiting();
 
-            if (env.IsDevelopment())
+            if (env.IsDevelopment() && Environment.GetEnvironmentVariable("LAUNCH_DEV_NODE_SERVER") == null)
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -88,6 +95,7 @@ namespace SpotifyDiscovery
                 app.UseHsts();
             }
             app.UseSerilogRequestLogging();
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
@@ -103,7 +111,7 @@ namespace SpotifyDiscovery
             {
                 spa.Options.SourcePath = "ClientApp";
 
-                if (env.IsDevelopment())
+                if (env.IsDevelopment() && Environment.GetEnvironmentVariable("LAUNCH_DEV_NODE_SERVER") == null)
                 {
                     spa.UseReactDevelopmentServer(npmScript: "start");
                 }

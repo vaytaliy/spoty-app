@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SpotifyDiscovery.Dtos;
 using SpotifyDiscovery.Hubs;
+using SpotifyDiscovery.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -70,6 +71,11 @@ namespace SpotifyDiscovery.Realtime
         public Task SendInformationAboutProfilesOfRoomToConnection(string connectionId, IEnumerable<string> uniqueSpotifyProfileIds)
         {
             return _sharedPlayerHubContext.Clients.Client(connectionId).SendAsync("room-clients-info", uniqueSpotifyProfileIds);
+        }
+
+        public Task SendInformationAboutRoomToHost(string connectionId, Room roomInformation)
+        {
+            return _sharedPlayerHubContext.Clients.Client(connectionId).SendAsync("host-room-settings-information", roomInformation);
         }
     }
 }

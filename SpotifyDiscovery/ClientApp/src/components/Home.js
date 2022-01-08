@@ -1,4 +1,4 @@
-import SpotiPlayer from './SpotiPlayer';
+import {SpotiPlayer} from './SpotiPlayer';
 import React, { useState, useEffect } from 'react';
 import SongTracker from './SongTracker';
 import AppInfo from '../constants';
@@ -17,6 +17,7 @@ const Home = (props) => {
 
         if (userData.errorMessage) {
             setHostId('')
+            console.log(props)
             props.data.runRefreshAuthorization()
         } else {
             setHostId(userData.id)

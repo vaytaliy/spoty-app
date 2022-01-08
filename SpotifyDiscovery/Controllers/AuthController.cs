@@ -44,7 +44,7 @@ namespace SpotifyDiscovery.Controllers
             Response.Redirect($"{_configuration["Spotify:AuthorizationLink"]}?response_type=code&" +
                 $"client_id={_configuration["ClientId"]}" +
                 $"&scope={WebUtility.UrlEncode(scopes)}" +
-                $"&redirect_uri={WebUtility.UrlEncode($"{_configuration["Hosting:BaseURL"]}/{_configuration["Spotify:RedirectPath"]}")}");
+                $"&redirect_uri={WebUtility.UrlEncode($"{Request.Scheme}://{Request.Host}/{_configuration["Spotify:RedirectPath"]}")}");
         }
 
         [HttpGet("authorization")]
@@ -55,7 +55,7 @@ namespace SpotifyDiscovery.Controllers
             if (queryDict.ContainsKey("error"))
             {
                 //send error response
-                Response.Redirect($"{_configuration["Hosting:BaseURL"]}/main?error={queryDict["error"]}");
+                Response.Redirect($"{Request.Scheme}://{Request.Host}/main?error={queryDict["error"]}");
                 return;
             }
 
@@ -63,7 +63,7 @@ namespace SpotifyDiscovery.Controllers
             {
                 new KeyValuePair<string, string>("grant_type", "authorization_code"),
                 new KeyValuePair<string, string>("code", WebUtility.UrlEncode(queryDict["code"])),
-                new KeyValuePair<string, string>("redirect_uri", $"{_configuration["Hosting:BaseURL"]}/{_configuration["Spotify:RedirectPath"]}")
+                new KeyValuePair<string, string>("redirect_uri", $"{Request.Scheme}://{Request.Host}/{_configuration["Spotify:RedirectPath"]}")
             });
 
             using var response = await _client.PostAsync("https://accounts.spotify.com/api/token", requestContent);
@@ -75,13 +75,13 @@ namespace SpotifyDiscovery.Controllers
 
                 TokenObject tokenObject = (TokenObject)JsonSerializer.Deserialize(responseContent, typeof(TokenObject));
 
-                Response.Redirect($"{_configuration["Hosting:BaseURL"]}/callback?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
+                Response.Redirect($"{Request.Scheme}://{Request.Host}/callback?access_token={tokenObject.AccessToken}&refresh_token={tokenObject.RefreshToken}");
                 return;
             }
 
             var resMsg = await response.Content.ReadAsStringAsync();
             _logger.LogInformation(resMsg);
-            Response.Redirect($"{_configuration["Hosting:BaseURL"]}/callback?error=invalid_token");
+            Response.Redirect($"{Request.Scheme}://{Request.Host}/callback?error=invalid_token");
         }
 
         [HttpPost("refresh_token")]

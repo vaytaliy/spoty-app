@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SpotifyDiscovery.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,5 +16,6 @@ namespace SpotifyDiscovery.Realtime
         Task NotifyThisClientOnSuccessRoomJoining(string connectionId);
         Task NotifyOthersAboutConnectingAsListener(string spotifyIdOfThisListener, string newConnectedClient, string roomId);
         Task SendInformationAboutProfilesOfRoomToConnection(string connectionId, IEnumerable<string> uniqueSpotifyProfileIds);
+        Task SendInformationAboutRoomToHost(string connectionId, Room roomInformation);
     }
 }

@@ -1,28 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Route, Redirect } from 'react-router';
-import {useParams} from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import AuthLogic from './logic/Auth';
 
 // this component
 // only handles saving tokens into local storage
 // and then redirecting user to Home page
 
+let successResult = {redirectLink: "/"}
+
 const CallbackComponent = (props) => {
 
-    let isSuccessful = false;
-    const urlParams = new URLSearchParams(window.location.search);
+    //const navigate = useNavigate();
+    let navigate = useNavigate();
+    
+
+    const getCredsAndRedirect = () => {
+        let isSuccessful = false;
+
+        const urlParams = new URLSearchParams(window.location.search);
         
-    let accessToken = urlParams.get('access_token');
-    let refreshToken = urlParams.get('refresh_token');
-
-    isSuccessful = AuthLogic.saveCreds(accessToken, refreshToken)
-
-    if (isSuccessful){
-
-        props.data.modifyLoginState(true)
-        return <Redirect to='/home' />
+        let accessToken = urlParams.get('access_token');
+        let refreshToken = urlParams.get('refresh_token');
+    
+        isSuccessful = AuthLogic.saveCreds(accessToken, refreshToken)
+    
+        if (isSuccessful){
+            navigate(-2);
+        }
+        props.data.modifyLoginState(isSuccessful) 
     }
-    return <Redirect to='/unauthorized?error=unable+to+save+credentials' />
+
+    useEffect(() => {
+        getCredsAndRedirect()
+    }, [])
+
+    return (
+        <div>
+            <p>Authorizing..</p>
+        </div>
+    );
 };
 
-export default CallbackComponent;
+export {CallbackComponent, successResult};

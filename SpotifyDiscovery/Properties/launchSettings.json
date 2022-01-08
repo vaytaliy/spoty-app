@@ -7,13 +7,13 @@
       "sslPort": 0
     },
     "iisExpress": {
-      "applicationUrl": "http://localhost:56448",
+      "applicationUrl": "http://localhost:56449",
       "sslPort": 44360
     }
   },
   "profiles": {
     "IIS Express": {
-      "commandName": "Docker",
+      "commandName": "IISExpress",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
@@ -31,12 +31,12 @@
       "commandName": "Docker",
       "launchBrowser": true,
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
-      "publishAllPorts": true,
-      "useSSL": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
+      "publishAllPorts": true,
       "httpPort": 8006,
+      "useSSL": true,
       "sslPort": 44360
     }
   }

@@ -10,14 +10,17 @@ namespace SpotifyDiscovery.Models
 {
     public class Account
     {
+        public const string SpotifyIdBsonName = "id";
+        public const string FriendlistBsonName = "spotifyId";
+
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        [BsonElement("spotifyId")]
+        [BsonElement(SpotifyIdBsonName)]
         public string SpotifyId { get; set; }
         [BsonElement("nickname")]
         public string Nickname { get; set; }
-        [BsonElement("friendList")]
+        [BsonElement(FriendlistBsonName)]
         public BsonArray Friends { get; set; }
         [BsonElement("ProfileImages")]
         public List<ImageObject> ProfileImages { get; set; }

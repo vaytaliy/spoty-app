@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Redirect, Route, Switch, Router } from 'react-router-dom';
+import { Route, BrowserRouter, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { createBrowserHistory } from 'history'
 //import { Layout } from './components/Layout';
 import Home from './components/Home';
 import Landing from './components/Landing';
-import CallbackComponent from './components/CallbackComponent';
+import {CallbackComponent, successResult} from './components/CallbackComponent';
 
 import './custom.css'
 import Login from './components/Login';
@@ -14,13 +14,12 @@ import Hosting from './components/logic/Hosting';
 //import connection from './components/logic/Realtime'
 
 let history = createBrowserHistory();
-
+//Hosting.initSignalR(window.localStorage.getItem('access_token'))
 
 const App = () => {
 
-
 	// Start the connection.
-	console.log(process.env.REACT_APP_HOST_URL)
+	let navigate = useNavigate();
 	const [isLoggedIn, setIsLoggedIn] = useState(true);
 	const [authRefreshTimerIsCreated, setAuthRefreshTimerIsCreated] = useState(false);
 	const [credentials, setCredentials] = useState(
@@ -30,14 +29,14 @@ const App = () => {
 		}
 	);
 	const [authenticationFailed, setAuthenticationFailed] = useState(false);
-
 	let authRefreshTimeout = null;
 
-	useEffect(() => {
-		(async () => {
-			await Hosting.initSignalR()
-		})();
-	}, []);
+
+	// useEffect(() => {
+	// 	(async () => {
+	// 		await Hosting.initSignalR(window.localStorage.getItem('access_token'))
+	// 	})();
+	// }, []);
 
 	// useEffect(() => {	//uncomment this if want to reauth every 60 mins
 
@@ -50,7 +49,6 @@ const App = () => {
 
 	// }, [authRefreshTimerIsCreated])
 
-
 	const runRefreshAuthorization = () => {
 		console.log('making reauth')
 		setRefreshedTokens();
@@ -58,13 +56,11 @@ const App = () => {
 	}
 
 	const modifyLoginState = (loginIsSuccessful) => {
-
 		console.log('the login state is set to', loginIsSuccessful);
 		setIsLoggedIn(loginIsSuccessful);
 	}
 
 	const setRefreshedTokens = async () => {
-
 
 		const res = await AuthLogic.tryRefreshTokens();
 
@@ -76,33 +72,31 @@ const App = () => {
 			setAuthenticationFailed(false);
 
 		} else if (!res || res.error) {
-
 			setIsLoggedIn(true);
 			console.log("couldn't renew credentials")
 			setIsLoggedIn(false);
 			setAuthenticationFailed(true);
+			navigate('/unauthorized')
 		}
 	}
 
 	return (
-		<div>
-			<Route exact path='/'> <Landing /></Route>
-			<Route path='/home'>
-				{isLoggedIn ? <Home data={{ setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState }} /> : <Redirect to='/unauthorized' />}
-			</Route>
-			{/* <Route path='/unauthorized' data={{ isLoggedIn }} render={(isLoggedIn) => {
-				if (!isLoggedIn) {
-					return <Login />
-				}
-			}}>
-			</Route> */}
-			<Route path='/unauthorized'> <Login />
-			</Route>
-			<Route path='/callback'>
-				<CallbackComponent data={{ modifyLoginState }} />
-			</Route>
-			<Route path='/rooms/:id'>
-				{isLoggedIn ? <SharedPlayer playerControl={{ skipSong: null }} history={history}
+		//<BrowserRouter>
+			<Routes>
+				<Route exact path='/' element={<Landing />} />
+				<Route path='/home'
+					element={<Home data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState}} />}
+				/>
+				{/*: <Navigate to='/unauthorized' />}*/}
+				{/* <Route path='/unauthorized' data={{ isLoggedIn }} render={(isLoggedIn) => {
+					if (!isLoggedIn) {
+						return <Login />
+					}
+				}}>
+				</Route> */}
+				<Route path='/unauthorized' element={<Login/>} />
+				<Route path='/callback' element={<CallbackComponent data={{modifyLoginState}} />} />
+				{isLoggedIn ? <Route path='/rooms/:id' element={<SharedPlayer playerControl={{ skipSong: null }} history={history}
 					data={{
 						setRefreshedTokens,
 						isLoggedIn,
@@ -110,22 +104,22 @@ const App = () => {
 						runRefreshAuthorization,
 						authenticationFailed,
 						modifyLoginState
-					}} /> : <Redirect to='/unauthorized' />}
-			</Route>
-			{/* <Route path='/join/:id'>
-				<Switch>
-					<SharedPlayer playerControl={{ skipSong: null }}
-						data={{
-							setRefreshedTokens,
-							isLoggedIn,
-							credentials,
-							runRefreshAuthorization,
-							authenticationFailed,
-							modifyLoginState
-						}} action="join" />
-				</Switch>
-			</Route> */}
-		</div>
+					}} />} /> : null}
+				{/* <Route path='/join/:id'>
+					<Switch>
+						<SharedPlayer playerControl={{ skipSong: null }}
+							data={{
+								setRefreshedTokens,
+								isLoggedIn,
+								credentials,
+								runRefreshAuthorization,
+								authenticationFailed,
+								modifyLoginState
+							}} action="join" />
+					</Switch>
+				</Route> */}
+			</Routes>
+		//</BrowserRouter>
 	);
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Tracker from './logic/Tracker';
-import SpotiPlayer from './SpotiPlayer';
+import {SpotiPlayer} from './SpotiPlayer';
 import Auth from './logic/Auth';
 
 

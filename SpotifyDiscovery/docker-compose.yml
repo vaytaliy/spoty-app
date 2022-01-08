@@ -1,0 +1,25 @@
+version: '3'
+services:
+  serilog:
+    image: datalust/seq
+    restart: unless-stopped
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINUSERNAME=adminuser
+      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=FKX+iYwehwBiwQs3ET2onH8DWyzd8IWJZgq+YGwQcihJ++dWfg==
+    ports:
+      - "8081:80"
+      - "5342:5341"
+  mongo:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+  redis:
+    image: redis
+    ports:
+      - "6379:6379"
+    container_name: redis

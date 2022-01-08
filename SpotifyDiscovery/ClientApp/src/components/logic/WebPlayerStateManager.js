@@ -1,7 +1,8 @@
 //Handles events of a player 
 //and returns needed data from such events
+import {deviceId} from './../SpotiPlayer'
 
-const WebPlayer = {
+const WebPlayerStateManager = {
 
     handleAuthError: (player, state) => {
         console.log(state); //this works ok
@@ -32,7 +33,7 @@ const WebPlayer = {
         return currentSong;
     },
 
-    playSongById: async (accessToken, songId, deviceId) => {
+    playSongById: async (accessToken, songId, deviceIda) => {
         const uri = `spotify:track:${songId}`;
         console.log("im uri", uri)
         await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
@@ -76,4 +77,4 @@ const WebPlayer = {
         return { result: "unexpected_response_code" };
     }
 }
-export default WebPlayer;
+export default WebPlayerStateManager;
