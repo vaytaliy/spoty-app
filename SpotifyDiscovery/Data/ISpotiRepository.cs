@@ -4,6 +4,7 @@ using SpotifyDiscovery.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Data
@@ -37,7 +38,7 @@ namespace SpotifyDiscovery.Data
         Task<PrivateToggleResultDto> ToggleRoomPrivate(string roomId, bool isPrivateRoomFlag);
         Task MakeUserAuthorizedToRoom(string roomId, string spotifyId);
         Task ToggleRoomActive(string spotifyId, bool roomIsActive);
-        Task<List<Room>> GetActiveRooms(int searchStart, int searchSize);
+        Task<List<Room>> GetActiveRooms(int searchStart, int searchSize, CancellationToken cancellationToken = default);
         Task SetActiveSong(string roomId, string songId);
     }
 }

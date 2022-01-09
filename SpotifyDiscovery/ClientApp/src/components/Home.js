@@ -1,7 +1,6 @@
 import {SpotiPlayer} from './SpotiPlayer';
 import React, { useState, useEffect } from 'react';
 import SongTracker from './SongTracker';
-import AppInfo from '../constants';
 import AuthLogic from './logic/Auth';
 
 const Home = (props) => {
@@ -32,7 +31,7 @@ const Home = (props) => {
 
     return (
         <div>
-            <SongTracker data={props.data} />
+            {props.renderPlayer == true ? <SongTracker data={props.data}/> : null}
             {renderHosting()}
         </div>
     );

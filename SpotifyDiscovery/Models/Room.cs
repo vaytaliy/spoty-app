@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using Mapster;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Models
 {
+    [AdaptTo("[name]Dto"), GenerateMapper]
     public class Room
     {
         public const string IsFriendsOnlyBson = "isFriendsOnly";

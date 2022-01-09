@@ -1,5 +1,4 @@
 import { trackedMusicThisSession } from '../storage/InMemoryStorage';
-import AppInfo from '../../constants';
 
 const Tracker = {
 
@@ -7,7 +6,6 @@ const Tracker = {
 
         if (trackedMusicThisSession.has(requestData.songId)) {
 
-            console.log("already in memory");
             return { result: "in_memory" };
         }
 
@@ -31,7 +29,6 @@ const Tracker = {
             return { result: "failure" };
         }
 
-        console.log("ok")
         trackedMusicThisSession.add(requestData.songId);
         const parsedRes = await res.json();
 
@@ -80,11 +77,28 @@ const Tracker = {
         const parsedRes = await res.json();
 
         if (res.status == 200) {
-            console.log("parsed res", parsedRes)
             return { playlistId: parsedRes.playlistId }
         }
 
         return { responseType: "error", description: "error fetching playlist" }
+    },
+
+    getSongInformation: async (room, accessToken, songId) => {
+        const res = await fetch(`https://api.spotify.com/v1/tracks/${songId}`, {        // add autoplaylist functionality
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (res.status != 200) {
+            return {error: "song_not_found", description: "search song couldn't be found"}
+        }
+
+        const parsedRes = await res.json();
+
+        return {room, roomInfo: parsedRes};
     }
 }
 

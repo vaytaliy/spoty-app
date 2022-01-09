@@ -9,6 +9,8 @@ using System.Text.Json;
 using SpotifyDiscovery.Models;
 using System.Collections.Generic;
 using System;
+using System.Threading;
+using System.Linq;
 
 namespace SpotifyDiscovery.Controllers
 {
@@ -83,8 +85,7 @@ namespace SpotifyDiscovery.Controllers
         }
 
         [HttpGet("active_rooms")]
-        [SpotifyAuthFilter]
-        public async Task<IActionResult> GetActiveRooms([FromQuery] string page)
+        public async Task<IActionResult> GetActiveRooms([FromQuery] string page, CancellationToken cancellationToken)
         {
 
             var searchSize = 10;
@@ -98,21 +99,30 @@ namespace SpotifyDiscovery.Controllers
 
             if (searchStart > 0) searchStart -= searchSize;
 
-            var cachedRoomsSerialized = await _cache.GetAsync($"active_pages{searchStart}");
+            var cachedRoomsSerialized = await _cache.GetAsync($"active_pages{searchStart}", cancellationToken);
             
             if (cachedRoomsSerialized != null)
             {
-                var cachedRooms = JsonSerializer.Deserialize<List<Room>>(cachedRoomsSerialized);
+                var cachedRooms = JsonSerializer.Deserialize<List<RoomGetInfoDto>>(cachedRoomsSerialized);
                 return Ok(cachedRooms);
             }
             
-            var activeRooms = await _sharedPlayerService.GetActiveRooms(searchStart, searchSize);
+            var activeRooms = await _sharedPlayerService.GetActiveRooms(searchStart, searchSize, cancellationToken);
+            var activeRoomReadDto = activeRooms.Select(room =>
+                new RoomGetInfoDto
+                {
+                    OwnerId = room.OwnerId,
+                    ActiveSong = room.ActiveSong,
+                    IsPasswordRequired = room.Password != null && room.Password != ""
 
-            if (activeRooms != null && activeRooms.Count > 0)
+                }).ToList();
+
+            if (activeRoomReadDto != null && activeRoomReadDto.Count > 0)
             {
-                await _cache.SetAsync($"active_pages{searchStart}", JsonSerializer.SerializeToUtf8Bytes(activeRooms), 
-                    new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20) });
-                return Ok(activeRooms);
+                
+                await _cache.SetAsync($"active_pages{searchStart}", JsonSerializer.SerializeToUtf8Bytes(activeRoomReadDto), 
+                    new DistributedCacheEntryOptions() {AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(20) }, cancellationToken);
+                return Ok(activeRoomReadDto);
             }
 
             return Ok(new { error= "no_rooms_found", description= "couldn't find any rooms at this page"});

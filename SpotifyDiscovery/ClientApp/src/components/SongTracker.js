@@ -17,7 +17,6 @@ const SongTracker = (props) => {
     const [songId, setSongId] = useState(null);
 
     let timeout = null;
-    //let playlistIdGet = Tracker.getPlaylistId(window.localStorage.getItem('access_token'));
 
     useEffect(() => {
         const playlistId = window.localStorage.getItem('playlist_id');
@@ -33,8 +32,6 @@ const SongTracker = (props) => {
 
         const accessToken = window.localStorage.getItem("access_token");
         const playlistResult = await Tracker.getPlaylist(accessToken);
-        console.log("playlist result", playlistResult)
-
 
         if (playlistResult && playlistResult.playlistId) {
             setPlaylistId(playlistResult.playlistId)

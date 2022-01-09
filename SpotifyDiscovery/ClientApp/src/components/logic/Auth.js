@@ -1,5 +1,3 @@
-import Account from './Account';
-import AppInfo from '../../constants';
 
 const saveTokens = (accessToken, refreshToken) => {
     if (refreshToken) {
@@ -84,8 +82,6 @@ const AuthLogic = {
 
             const userData = await res.json();
             //Account.activeUser = userData; // sets current user
-            console.log("spotify identifier")
-            console.log(userData);
             return userData;
         }
 

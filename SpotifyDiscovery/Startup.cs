@@ -48,7 +48,9 @@ namespace SpotifyDiscovery
                     builder.WithOrigins(Configuration["Hosting:BaseURL"]);
                 });
             });
-            services.AddSignalR();
+            services.AddSignalR().AddStackExchangeRedis(Configuration["SpotifyDiscoveryDatabaseSettings:InMemoryDatabaseConnection"], options => {
+                options.Configuration.ChannelPrefix = "MyApp";
+            });
             services.AddStackExchangeRedisCache(opts => {
                 opts.Configuration = Configuration["SpotifyDiscoveryDatabaseSettings:InMemoryDatabaseConnection"];
                 opts.InstanceName = "CacheInstance";
@@ -111,7 +113,7 @@ namespace SpotifyDiscovery
             {
                 spa.Options.SourcePath = "ClientApp";
 
-                if (env.IsDevelopment() && Environment.GetEnvironmentVariable("LAUNCH_DEV_NODE_SERVER") == null)
+                if (env.IsDevelopment())
                 {
                     spa.UseReactDevelopmentServer(npmScript: "start");
                 }

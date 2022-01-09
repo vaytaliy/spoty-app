@@ -1,5 +1,4 @@
 import WebPlayerStateManager from "./WebPlayerStateManager";
-import AppInfo from "../../constants";
 import AuthLogic from "./Auth";
 
 const Hosting = {
@@ -120,7 +119,6 @@ const Hosting = {
         this.connection.on("listener-connected", (profile) => {
             this.connectedUsersInformation.set(profile.id, profile);
             this.uiControls.handleSetConnectedPeople(this.connectedUsersInformation);
-            console.log(`${profile.id} has connected, show him somehow!`);
         });
 
         this.connection.on("host-disconnected", () => {
@@ -141,8 +139,6 @@ const Hosting = {
     },
 
     associateConnectionToProfile: async function () {
-        console.log("2 associating")
-        console.log(this.connection.connectionState)
         await this.connection.invoke("ConnectAccount", this.profileId);
     },
 
@@ -158,7 +154,6 @@ const Hosting = {
 
         console.log("requested conn")
         const userData = await AuthLogic.requestAccountId(this.accessToken)
-        console.log(userData)
         //await this.start()
         if (userData.id) {
             this.profileId = userData.id
@@ -167,7 +162,6 @@ const Hosting = {
             await this.uiControls.runRefreshAuthorization()
         }
 
-        console.log(this.roomId)
         let joinHostResultRaw = await fetch(`room_api/${this.roomId}?connId=${this.connection.connectionId}&authToken=${this.accessToken}&password=${this.roomPassword}`, {
             method: 'GET',
             headers: {
@@ -189,7 +183,7 @@ const Hosting = {
     start: async function () {
         try {
             await this.connection.start();
-            console.log(" Connected.");
+            console.log(" Connected to shared player hub");
 
         } catch (err) {
             console.log(err);

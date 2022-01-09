@@ -26,18 +26,10 @@ const SharedPlayer = (props) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [deviceId, setDeviceId] = useState("")
 
-    // useEffect(() => { 
-    //     connectToRoom()
-    // }, [])
 
     useEffect(() => {
         connectToRoom();
     }, [props.data.credentials])
-
-    useEffect(() => {
-        console.log(props.data.isLoggedIn)
-        
-    }, [props.data.isLoggedIn])
 
     const handleSetConnectedPeople = (connectedPeopleMap) => { //invoke m
         setConnectedPeople(connectedPeopleMap);

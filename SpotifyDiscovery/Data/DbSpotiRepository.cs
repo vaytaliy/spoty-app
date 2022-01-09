@@ -6,6 +6,7 @@ using SpotifyDiscovery.Dtos;
 using SpotifyDiscovery.Dtos.Hub;
 using SpotifyDiscovery.Models;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SpotifyDiscovery.Data
@@ -308,9 +309,9 @@ namespace SpotifyDiscovery.Data
                 .Update.Push(Room.AuthenticatedUsersBson, spotifyId));
         }
 
-        public async Task<List<Room>> GetActiveRooms(int searchStart, int searchSize)
+        public async Task<List<Room>> GetActiveRooms(int searchStart, int searchSize, CancellationToken cancellationToken = default)
         {
-            var rooms = await _db.Room.Find(pre => pre.IsActive == true).Skip(searchStart).Limit(searchSize).ToListAsync();
+            var rooms = await _db.Room.Find(pre => pre.IsActive == true).Skip(searchStart).Limit(searchSize).ToListAsync(cancellationToken);
             return rooms;
         }
 

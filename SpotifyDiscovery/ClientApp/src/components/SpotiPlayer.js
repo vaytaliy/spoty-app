@@ -79,7 +79,6 @@ const SpotiPlayer = (props) => {
     }, [props.playerControl.skipSong])
 
     const togglePlayback = () => {
-        console.log(spotyPlayer)
         if (spotyPlayer) {
             spotyPlayer.togglePlay()
                 .then(() => {
@@ -119,15 +118,6 @@ const SpotiPlayer = (props) => {
         return player;
     }
 
-    const getSpotyPlayer = async () => {
-        if (spotyPlayer == null) {
-            await reinitializePlayer()
-        }
-
-        return spotyPlayer;
-    }
-
-
     const addListeners = async () => {
         spotyPlayer.addListener('initialization_error', ({ message }) => { console.error(message); });
 
@@ -149,14 +139,11 @@ const SpotiPlayer = (props) => {
                 await props.data.setRefreshedTokens(); // this is good
                 props.data.runRefreshAuthorization();
             }
-            console.log(state);
-
         })
 
         spotyPlayer.addListener('player_state_changed', async state => {
             let newSong = WebPlayerStateManager.handleStateChange(state, playerData.currentSongId);
             //may return new song object or null if current song isn't new
-            console.log(state);
             setPlayerState(state)
             if (newSong) {
                 playerData.currentSongId = newSong.id

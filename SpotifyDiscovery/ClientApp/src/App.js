@@ -81,19 +81,11 @@ const App = () => {
 	}
 
 	return (
-		//<BrowserRouter>
 			<Routes>
-				<Route exact path='/' element={<Landing />} />
+				<Route exact path='/' element={<Landing renderPlayer={false} data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState}}/>} />
 				<Route path='/home'
-					element={<Home data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState}} />}
+					element={<Home renderPlayer={true} data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState}} />}
 				/>
-				{/*: <Navigate to='/unauthorized' />}*/}
-				{/* <Route path='/unauthorized' data={{ isLoggedIn }} render={(isLoggedIn) => {
-					if (!isLoggedIn) {
-						return <Login />
-					}
-				}}>
-				</Route> */}
 				<Route path='/unauthorized' element={<Login/>} />
 				<Route path='/callback' element={<CallbackComponent data={{modifyLoginState}} />} />
 				{isLoggedIn ? <Route path='/rooms/:id' element={<SharedPlayer playerControl={{ skipSong: null }} history={history}
@@ -105,21 +97,7 @@ const App = () => {
 						authenticationFailed,
 						modifyLoginState
 					}} />} /> : null}
-				{/* <Route path='/join/:id'>
-					<Switch>
-						<SharedPlayer playerControl={{ skipSong: null }}
-							data={{
-								setRefreshedTokens,
-								isLoggedIn,
-								credentials,
-								runRefreshAuthorization,
-								authenticationFailed,
-								modifyLoginState
-							}} action="join" />
-					</Switch>
-				</Route> */}
 			</Routes>
-		//</BrowserRouter>
 	);
 }
 

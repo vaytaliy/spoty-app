@@ -25,6 +25,7 @@ namespace SpotifyDiscovery
                 .AddJsonFile("appsettings.json")
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development"}.json", true)
+                .AddEnvironmentVariables()
                 .Build();
 
 
@@ -36,7 +37,7 @@ namespace SpotifyDiscovery
                     period: TimeSpan.FromSeconds(5)
                  )
                 .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                .WriteTo.Seq(c["Serilog:SeqUrl"])
+                .WriteTo.Seq("http://localhost:5341")
                 .WriteTo.Console()
                 .CreateLogger();
             try
@@ -59,11 +60,19 @@ namespace SpotifyDiscovery
                 {
                     if (context.HostingEnvironment.IsProduction())
                     {
+                        //var configOne = config.AddEnvironmentVariables();
                         var builtConfig = config.Build();
-                        var secretClient = new SecretClient(
-                            new Uri($"https://{builtConfig["KeyVaultName"]}.vault.azure.net/"),
-                            new DefaultAzureCredential());
-                        config.AddAzureKeyVault(secretClient, new KeyVaultSecretManager());
+
+                        foreach (var source in config.Sources)
+                        {
+                            Log.Logger.Information(source.ToString());
+                        }
+                        
+                        var keyVaultUrl = $"https://{builtConfig["KeyVaultName"]}.vault.azure.net/";
+                        var clientId = builtConfig["ClientId"];
+                        var clientSecret = builtConfig["ClientSecret"];
+
+                        config.AddAzureKeyVault(vault: $"https://{builtConfig["KeyVaultName"]}.vault.azure.net/", clientId, clientSecret);
                     }
                 })
                 .ConfigureWebHostDefaults(webBuilder =>

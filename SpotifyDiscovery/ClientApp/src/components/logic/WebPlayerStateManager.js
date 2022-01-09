@@ -4,15 +4,6 @@ import {deviceId} from './../SpotiPlayer'
 
 const WebPlayerStateManager = {
 
-    handleAuthError: (player, state) => {
-        console.log(state); //this works ok
-        if (player.initialized) {
-            console.log("initialized");
-        } else {
-            console.log("uninitialized"); // wtf change this
-        }
-    },
-
     handleStateChange: (state, storedSongId) => {
 
         if (!state) {
@@ -33,7 +24,7 @@ const WebPlayerStateManager = {
         return currentSong;
     },
 
-    playSongById: async (accessToken, songId, deviceIda) => {
+    playSongById: async (accessToken, songId, deviceId) => {//chk
         const uri = `spotify:track:${songId}`;
         console.log("im uri", uri)
         await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {

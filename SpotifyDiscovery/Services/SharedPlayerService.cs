@@ -77,6 +77,11 @@ namespace SpotifyDiscovery.Services
 
             await Task.WhenAll(new Task[] { roomInfoTask, ownerAccountInfoTask });
 
+            if (roomInfoTask.Result == null)
+            {
+                return RoomJoinStatuses.ROOM_NOT_EXISTS;
+            }
+
             if (roomInfoTask.Result.IsFriendsOnly == true)
             {
                 if (IsInFriendlistOfRoomOwner())
@@ -121,7 +126,7 @@ namespace SpotifyDiscovery.Services
 
             bool IsInFriendlistOfRoomOwner()
             {
-                if (ownerAccountInfoTask.Result.Friends.Contains(spotifyProfile.SpotifyId))
+                if (ownerAccountInfoTask.Result.Friends != null && ownerAccountInfoTask.Result.Friends.Contains(spotifyProfile.SpotifyId))
                 {
                     return true;
                 }
@@ -183,9 +188,9 @@ namespace SpotifyDiscovery.Services
 
         }
 
-        public async Task<List<Room>> GetActiveRooms(int searchStart, int searchSize)
+        public async Task<List<Room>> GetActiveRooms(int searchStart, int searchSize, CancellationToken cancellationToken)
         {
-            return await _spotiRepository.GetActiveRooms(searchStart, searchSize);
+            return await _spotiRepository.GetActiveRooms(searchStart, searchSize, cancellationToken);
         }
     }
 }
