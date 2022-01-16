@@ -24,7 +24,7 @@ const WebPlayerStateManager = {
         return currentSong;
     },
 
-    playSongById: async (accessToken, songId, deviceId) => {//chk
+    playSongById: async (accessToken, songId, deviceId) => {
         const uri = `spotify:track:${songId}`;
         console.log("im uri", uri)
         await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {

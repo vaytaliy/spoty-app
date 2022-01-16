@@ -4,12 +4,14 @@ const SettingsBox = (props) => {
     const [roomPassword, setRoomPassword] = useState("");
     const [roomIsFriendsOnly, setRoomIsFriendsOnly] = useState(false);
     const [roomIsPrivatePage, setRoomIsPrivatePage] = useState(false);
-
+    const [publicIsEnabled, setPublicIsEnabled] = useState(true)
 
     useEffect(() => {
         if (props.data.roomSettings.password) setRoomPassword(props.data.roomSettings.password);
         if (props.data.roomSettings.isFriendsOnly) setRoomIsFriendsOnly(props.data.roomSettings.isFriendsOnly);
         if (props.data.roomSettings.isPrivate) setRoomIsPrivatePage(props.data.roomSettings.isPrivate);
+
+        setPublicIsEnabled(!props.data.roomSettings.isFriendsOnly)
     }, [props.data.roomSettings])
 
     const handleNewPasswordSubmit = async (e) => {
@@ -44,13 +46,22 @@ const SettingsBox = (props) => {
         })
         setRoomIsFriendsOnly(newVal)
 
+        if (newVal === false) {
+            setPublicIsEnabled(true)
+        }
+
         if (newVal === true) {
-            setRoomIsPrivatePage(true)
+            await props.methods.changeRoomProperties({
+                changeType: "room_public_access",
+                setIsPrivateRoom: false
+            })
+            setPublicIsEnabled(false)
+            setRoomIsPrivatePage(false)
         }
     };
 
     const handleRoomPassword = (e) => {
-        if (roomPassword.length < 8) {
+        if (e.target.value.length <= 8 && roomPassword.length <= 8) {
             setRoomPassword(e.target.value)
         }
     };
@@ -70,7 +81,7 @@ const SettingsBox = (props) => {
             </label>
             <label>
                 Room is available on public page
-                <input type="checkbox" id="setRoomIsOnPublicPage" checked={roomIsPrivatePage} onChange={(e) => handleIsPublicRoomCheckbox(e)} name="setRoomIsOnPublicPage" />
+                <input type="checkbox" id="setRoomIsOnPublicPage" disabled={!publicIsEnabled} checked={roomIsPrivatePage} onChange={(e) => handleIsPublicRoomCheckbox(e)} name="setRoomIsOnPublicPage" />
             </label>
         </div>
     )

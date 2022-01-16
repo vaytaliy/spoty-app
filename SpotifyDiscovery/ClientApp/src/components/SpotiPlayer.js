@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router';
 import WebPlayerStateManager from './logic/WebPlayerStateManager';
 import AuthLogic from './logic/Auth';
@@ -32,6 +32,7 @@ const SpotiPlayer = (props) => {
     const [playerState, setPlayerState] = useState(null);
     const [currentSong, setCurrentSong] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null); //needs to be sent a level higher
+    
 
     let timeout = null;
 
@@ -53,12 +54,13 @@ const SpotiPlayer = (props) => {
                 spotyPlayer.removeListener('not_ready')
                 spotyPlayer.disconnect();
             }
-            
+
             document.body.removeChild(spotyPlayerScript);
         }
     }, [])
 
     useEffect(() => {
+        //props.playerIsReady.setPlayerIsReady(false) 
         startSpotifySDK();
     }, [props.data.credentials])
 
@@ -135,6 +137,7 @@ const SpotiPlayer = (props) => {
         });
 
         spotyPlayer.addListener('authentication_error', async state => {
+            console.log("auth error")
             if (state.message !== "Browser prevented autoplay due to lack of interaction") {
                 await props.data.setRefreshedTokens(); // this is good
                 props.data.runRefreshAuthorization();
@@ -149,16 +152,17 @@ const SpotiPlayer = (props) => {
                 playerData.currentSongId = newSong.id
                 playerData.previousSongId = newSong.oldSongId;
                 playerData.state = state;
+                console.log(newSong)
                 playerData.onSongChange(playerData.currentSongId);
 
                 if (props.tracking) {
+                    console.log("it works device id")
                     props.tracking.setSongId(newSong.id);
                     await props.tracking.registerSong({ songId: newSong.id, accessToken: window.localStorage.getItem("access_token") });
                 }
                 //if this is a host and shares player, send update to others
-                if (props.sharing) {
-                    console.log(newSong.id)
-                    await Hosting.updateState(newSong.id);
+                if (props.sharing && Hosting.connection.connectionState == "Connected") {
+                    Hosting.updateState(newSong.id);
                 }
                 setCurrentSong(newSong)
             }
@@ -167,11 +171,11 @@ const SpotiPlayer = (props) => {
         spotyPlayer.addListener('ready', async ({ device_id }) => {
             setLoadMessage(null)
             setErrorMessage(null)
+
             console.log('Ready with Device ID', device_id);
             deviceId = device_id;
-            if (props.data.windowmanage) {
-                props.data.windowmanage.setPlayerDeviceId(deviceId);
-            }
+            
+
             let playerIsPaused = false;
 
             if (playerState && playerState.paused) {
@@ -182,6 +186,8 @@ const SpotiPlayer = (props) => {
                 device_id,
                 window.localStorage.getItem('access_token'),
                 !playerIsPaused);
+
+                if (props.setDeviceId) props.setDeviceId(deviceId)
         });
 
         spotyPlayer.addListener('not_ready', ({ device_id }) => {
@@ -249,7 +255,6 @@ const SpotiPlayer = (props) => {
             <Skeleton variant="rectangular" width={210} height={118} />
         );
     }
-
 }
 
-export {SpotiPlayer, deviceId};
+export { SpotiPlayer, deviceId };

@@ -26,7 +26,7 @@ const SongTracker = (props) => {
         } else {
             getPlaylistId()
         }
-    }, [])
+    }, [props.data.credentials])
 
     const getPlaylistId = async () => {
 

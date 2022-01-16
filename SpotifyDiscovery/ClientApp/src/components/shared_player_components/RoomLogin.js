@@ -12,7 +12,7 @@ const RoomLogin = (props) => {
     };
 
     const handleJoinPassword = (e) => {
-        if (joinPassword.length < 8) {
+        if (e.target.value <= 8 && joinPassword.length <= 8) {
             setJoinPassword(e.target.value);
         }
     };

@@ -6,28 +6,32 @@ import AuthLogic from './logic/Auth';
 // only handles saving tokens into local storage
 // and then redirecting user to Home page
 
-let successResult = {redirectLink: "/"}
+let successResult = { redirectLink: "/" }
 
 const CallbackComponent = (props) => {
 
     //const navigate = useNavigate();
     let navigate = useNavigate();
-    
+
 
     const getCredsAndRedirect = () => {
         let isSuccessful = false;
 
         const urlParams = new URLSearchParams(window.location.search);
-        
+
         let accessToken = urlParams.get('access_token');
         let refreshToken = urlParams.get('refresh_token');
-    
+
         isSuccessful = AuthLogic.saveCreds(accessToken, refreshToken)
-    
-        if (isSuccessful){
-            navigate(-2);
+
+        if (isSuccessful) {
+            if (window.history.length > 1) {
+                navigate(-2);
+            } else {
+                navigate('/');
+            }
         }
-        props.data.modifyLoginState(isSuccessful) 
+        props.data.modifyLoginState(isSuccessful)
     }
 
     useEffect(() => {
@@ -41,4 +45,4 @@ const CallbackComponent = (props) => {
     );
 };
 
-export {CallbackComponent, successResult};
+export { CallbackComponent, successResult };

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const Login = () => {
+const Login = (props) => {
+
+    let navigate = useNavigate();
 
     useEffect(() => {
-        console.log("rendered login page")
+        if (props.userRedirected == false) {
+            navigate("/")
+        }
     }, [])
 
     return (

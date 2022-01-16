@@ -58,6 +58,7 @@ const App = () => {
 	const modifyLoginState = (loginIsSuccessful) => {
 		console.log('the login state is set to', loginIsSuccessful);
 		setIsLoggedIn(loginIsSuccessful);
+		setAuthenticationFailed(false);
 	}
 
 	const setRefreshedTokens = async () => {
@@ -86,7 +87,7 @@ const App = () => {
 				<Route path='/home'
 					element={<Home renderPlayer={true} data={{setRefreshedTokens, isLoggedIn, credentials, runRefreshAuthorization, authenticationFailed, modifyLoginState}} />}
 				/>
-				<Route path='/unauthorized' element={<Login/>} />
+				<Route path='/unauthorized' element={<Login userRedirected={authenticationFailed} />} />
 				<Route path='/callback' element={<CallbackComponent data={{modifyLoginState}} />} />
 				{isLoggedIn ? <Route path='/rooms/:id' element={<SharedPlayer playerControl={{ skipSong: null }} history={history}
 					data={{

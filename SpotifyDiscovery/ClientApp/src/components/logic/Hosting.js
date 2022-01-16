@@ -30,9 +30,9 @@ const Hosting = {
 
         this.connection.on("room-hosting-success", async () => {
             this.connectedUsersInformation = new Map();
-            await this.connection.invoke("GetActiveSongInRoom", this.roomId, this.accessToken); //for testing
             this.uiControls.initIsHost(true);
             console.log("successfuly hosting room");
+            await this.connection.invoke("GetActiveSongInRoom", this.roomId, this.accessToken); //for testing
         });
 
         this.connection.on("success-settings-change", (change) => {
@@ -60,6 +60,7 @@ const Hosting = {
 
         this.connection.on("init-song-receive", async (songId) => {
             console.log("this is the current song", songId)
+            console.log(this.deviceId)
             await WebPlayerStateManager.playSongById(this.accessToken, songId, this.deviceId)
         });
 
@@ -153,6 +154,7 @@ const Hosting = {
         this.roomPassword = roomPassword;
 
         console.log("requested conn")
+
         const userData = await AuthLogic.requestAccountId(this.accessToken)
         //await this.start()
         if (userData.id) {
@@ -161,6 +163,22 @@ const Hosting = {
         } else {
             await this.uiControls.runRefreshAuthorization()
         }
+
+        // const devicesRaw = await fetch(`https://api.spotify.com/v1/me/player/devices`, {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'Authorization': `Bearer ${this.accessToken}`
+        //     }
+        // });
+
+        // const devicesParsed = await devicesRaw.json(devicesRaw);
+
+        // for (const device of devicesParsed) {
+        //     if (device.is_active) {
+        //         this.deviceId = device.id
+        //     }
+        // }
 
         let joinHostResultRaw = await fetch(`room_api/${this.roomId}?connId=${this.connection.connectionId}&authToken=${this.accessToken}&password=${this.roomPassword}`, {
             method: 'GET',

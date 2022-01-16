@@ -116,7 +116,7 @@ namespace SpotifyDiscovery.Hubs
 
             var room = await _spotiRepository.GetRoomInformation(roomId);
 
-            if (room != null)
+            if (room != null && user.SpotifyId != roomId) //dont want to do this for host
             {
                 await Clients.Group(user.SpotifyId).SendAsync("init-song-receive", room.ActiveSong);
             }
@@ -266,21 +266,6 @@ namespace SpotifyDiscovery.Hubs
                 }
             }
         }
-
-
-        //private async Task HandlePasswordChangeResult(RoomChangeStatusResultDto roomSettingsChangeResult, SetRoomPasswordResultDto passwordChangePayload, string spotifyId) 
-        //{
-        //    roomSettingsChangeResult.ChangeType = RoomChangeStatusResultDto.PasswordChange;
-        //    roomSettingsChangeResult.ChangePayload = passwordChangePayload;
-
-        //    if (passwordChangePayload.Result == SetRoomPasswordResultDto.SetResultSuccess)
-        //    {
-        //        await Clients.Group(spotifyId).SendAsync("success-settings-change", roomSettingsChangeResult);
-        //        return;
-        //    }
-
-        //    await Clients.Group(spotifyId).SendAsync("error-settings-change", roomSettingsChangeResult);
-        //}
 
         public async Task ConnectAccount(string spotifyId)
         {

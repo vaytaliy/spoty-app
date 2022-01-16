@@ -2,19 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Home from './Home';
 import Tracker from './logic/Tracker';
+import AuthLogic from './logic/Auth';
 
 const Landing = (props) => {
 
     const [activeRooms, setActiveRooms] = useState([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const [errorDisplay, setErrorDisplay] = useState(null);
-
+    const [hostingLink, setHostingLink] = useState(null);
 
     useEffect(() => {
         getActiveRooms()
-    }, []);
+    }, [props.data.credentials]);
 
     const getActiveRooms = async () => {
+        let account = await AuthLogic.requestAccountId(window.localStorage.getItem("access_token"))
+        if (account && account.errorMessage) {
+            props.data.runRefreshAuthorization()
+            return;
+        } else {
+            setHostingLink(`/rooms/${account.id}`)
+        }
 
         let abortController = new AbortController();
         let page = searchParams.get('page');
@@ -86,11 +94,12 @@ const Landing = (props) => {
 
     return (
         <div>
-            This is the main page
+            This page displays currently available rooms that you can join
+            Add query param to URL like "?page=2" to display rooms on page 2
             <div>
-                <a href="/home">Send me to the music tracker</a>
+                <a href="/home">Music tracker</a>
+                <a href={hostingLink}>Start hosting</a>
             </div>
-            <Home renderPlayer={false} data={props.data} />
             {errorDisplay != null ? (
                 <div>
                     <h2>{errorDisplay.error}</h2>

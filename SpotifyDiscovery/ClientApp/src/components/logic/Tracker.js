@@ -77,6 +77,7 @@ const Tracker = {
         const parsedRes = await res.json();
 
         if (res.status == 200) {
+            console.log(parsedRes)
             return { playlistId: parsedRes.playlistId }
         }
 

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import Hosting from './logic/Hosting';
-import {SpotiPlayer} from './SpotiPlayer';
+import {SpotiPlayer ,reinitializePlayer} from './SpotiPlayer';
 import AuthLogic from './logic/Auth';
 import ConnectedUsers from './shared_player_components/ConnectedUsers';
 import Chat from './shared_player_components/Chat';
@@ -13,6 +13,7 @@ import RoomLogin from './shared_player_components/RoomLogin';
 const SharedPlayer = (props) => {
 
     const { id } = useParams();
+    const spotyPlayerRef = useRef()
 
     const [isHost, setIsHost] = useState(false);
     const [chatContents, setChatContents] = useState([]);
@@ -24,21 +25,30 @@ const SharedPlayer = (props) => {
     const [roomSettings, setRoomSettings] = useState({})
     const [loadPlayer, setLoadPlayer] = useState(false)
     const [isLoggedIn, setIsLoggedIn] = useState(false)
-    const [deviceId, setDeviceId] = useState("")
+    const [deviceId, setDeviceId] = useState(null)
+    const [credentialsReady, setCredentialsReady] = useState(false);
+    //const [playerIsReady, setPlayerIsReady] = useState(null)
+    let credentialsAreReady = false;
 
+    // useEffect(() => {
+    //     connectToRoom();
+    // }, [props.data.credentials])
+
+    // useEffect(() => {
+    //     credentialsAreReady = true;
+    // }, [props.data.credentials])
 
     useEffect(() => {
-        connectToRoom();
-    }, [props.data.credentials])
+        if (deviceId != null) {
+            Hosting.deviceId = deviceId;
+            console.log("Device id change", deviceId)
+            connectToRoom();
+        }
+    }, [deviceId])
 
     const handleSetConnectedPeople = (connectedPeopleMap) => { //invoke m
         setConnectedPeople(connectedPeopleMap);
     };
-
-    const setPlayerDeviceId = (deviceId) => {
-        Hosting.deviceId = deviceId;
-        setDeviceId(deviceId);
-    }
 
     const handleReceiveChatMessage = async (incomingMessage, spotifyIdSender) => {
         const account = await AuthLogic.requestAccountId(window.localStorage.getItem('access_token'));
@@ -137,10 +147,9 @@ const SharedPlayer = (props) => {
     }
 
     const connectToRoom = async (joinPassword = "") => {
-
+        //if (Hosting.connection) Hosting.connection.stop()
         await Hosting.initSignalR("")
         
-
         const accessToken = window.localStorage.getItem('access_token');
         const account = await AuthLogic.requestAccountId(accessToken);
         const roomId = id;
@@ -157,7 +166,7 @@ const SharedPlayer = (props) => {
             <RoomError data={{roomError}}/>
             {isHost ? <SettingsBox methods={{changeRoomProperties}} data={{roomSettings}}/> : null }
             {displayLoginPrompt ? <RoomLogin methods={{connect}}/> : null}
-            {isLoggedIn ? <SpotiPlayer data={props.data} playerControl={props.playerControl} windowmanage={setPlayerDeviceId} sharing={true} listeningTo={id} /> : null}
+            {<SpotiPlayer setDeviceId={setDeviceId} data={props.data} playerControl={props.playerControl} ready={deviceId} sharing={true} listeningTo={id}  /> }
             {isLoggedIn ? <ConnectedUsers data={{connectedPeople, id}}/> : null}
             {isLoggedIn ? <Chat data={{chatContents}}/> : null}
         </div>
