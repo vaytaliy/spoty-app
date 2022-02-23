@@ -38,7 +38,7 @@ Alternatively you can attach volume to your database container to reference data
 ### Architecture
 
 #### Architecture diagram
-![App architecture diagram](/assets/spotiapp_arch.drawio.png)
+![App architecture diagram](/assets/spotiapp_arch-arch.drawio.png)
 
 Server app:
 - .netcore 5.0
