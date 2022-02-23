@@ -108,14 +108,19 @@ namespace SpotifyDiscovery.Controllers
             }
             
             var activeRooms = await _sharedPlayerService.GetActiveRooms(searchStart, searchSize, cancellationToken);
-            var activeRoomReadDto = activeRooms.Select(room =>
-                new RoomGetInfoDto
+            var activeRoomReadDto = activeRooms
+                .Where(room =>
+                room.IsActive == true &&
+                room.IsPrivate == true
+                )
+                .Select(room => new RoomGetInfoDto
                 {
                     OwnerId = room.OwnerId,
                     ActiveSong = room.ActiveSong,
-                    IsPasswordRequired = room.Password != null && room.Password != ""
-
-                }).ToList();
+                    IsPasswordRequired = room.Password != null && room.Password != "",
+                    IsPrivate = room.IsPrivate
+                })
+                .ToList();
 
             if (activeRoomReadDto != null && activeRoomReadDto.Count > 0)
             {

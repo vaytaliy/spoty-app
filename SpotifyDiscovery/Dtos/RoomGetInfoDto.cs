@@ -16,5 +16,7 @@ namespace SpotifyDiscovery.Dtos
         public bool IsActive { get; set; }
         [JsonPropertyName("requiresPassword")]
         public bool IsPasswordRequired { get; set; }
+        [JsonPropertyName("isPrivate")]
+        public bool IsPrivate { get; set; }
     }
 }
